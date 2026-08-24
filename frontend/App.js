@@ -1,8 +1,9 @@
 import React, { useContext } from 'react';
-import { StyleSheet, View, Text, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, ActivityIndicator, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { SafeAreaProvider, useSafeAreaInsets, initialWindowMetrics } from 'react-native-safe-area-context';
 
 // Import Context
 import { AuthProvider, AuthContext } from './context/AuthContext';
@@ -40,6 +41,8 @@ function AuthStack() {
 
 // App Bottom Tabs Navigation
 function AppTabs() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -48,8 +51,8 @@ function AppTabs() {
           backgroundColor: THEME.cardBg,
           borderTopWidth: 1,
           borderTopColor: THEME.border,
-          height: 60,
-          paddingBottom: 8,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
           paddingTop: 8,
         },
         tabBarActiveTintColor: THEME.primary,
@@ -57,6 +60,7 @@ function AppTabs() {
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
+          marginTop: 2,
         },
         tabBarIcon: ({ color, size }) => {
           let emoji = '📦';
@@ -118,9 +122,11 @@ function MainNavigator() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <MainNavigator />
-    </AuthProvider>
+    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+      <AuthProvider>
+        <MainNavigator />
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }
 

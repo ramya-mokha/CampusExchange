@@ -15,7 +15,9 @@
       "email": "jane.doe2023@vitstudent.ac.in",
       "passwordHash": "$2a$08$udAhakYViEdeI6J6QWqyUuNlF5kBwoszgpTnHZ5iqTB.ANtR5kCXy",
       "role": "student",
-      "wishlist": [],
+      "wishlist": [
+        "prod_003"
+      ],
       "createdAt": "2026-08-24T04:30:07.380Z"
     },
     {
@@ -88,6 +90,21 @@
       "seller": "user_student_002",
       "status": "sold",
       "createdAt": "2026-08-22T04:30:07.380Z"
+    },
+    {
+      "_id": "prod_du4qiwcff",
+      "name": "Fx-91 calculater",
+      "description": "Working good ",
+      "category": "💻 Electronics",
+      "price": 500,
+      "condition": "Good",
+      "pickupLocation": "AB2",
+      "images": [
+        "https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=400"
+      ],
+      "seller": "user_student_001",
+      "status": "active",
+      "createdAt": "2026-08-24T07:33:41.090Z"
     }
   ],
   "messages": []
