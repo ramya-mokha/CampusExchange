@@ -1,0 +1,94 @@
+{
+  "users": [
+    {
+      "_id": "user_admin_001",
+      "name": "Campus Admin",
+      "email": "admin@campus.edu",
+      "passwordHash": "$2a$08$4YzxO28QqyZ9iDOyteo6m.Ex2kZF9Y8QtIo.j443RS4gwXMFFoURW",
+      "role": "admin",
+      "wishlist": [],
+      "createdAt": "2026-08-24T04:30:07.378Z"
+    },
+    {
+      "_id": "user_student_001",
+      "name": "Jane Doe",
+      "email": "jane.doe2023@vitstudent.ac.in",
+      "passwordHash": "$2a$08$udAhakYViEdeI6J6QWqyUuNlF5kBwoszgpTnHZ5iqTB.ANtR5kCXy",
+      "role": "student",
+      "wishlist": [],
+      "createdAt": "2026-08-24T04:30:07.380Z"
+    },
+    {
+      "_id": "user_student_002",
+      "name": "John Smith",
+      "email": "john.smith@campus.edu",
+      "passwordHash": "$2a$08$udAhakYViEdeI6J6QWqyUuNlF5kBwoszgpTnHZ5iqTB.ANtR5kCXy",
+      "role": "student",
+      "wishlist": [],
+      "createdAt": "2026-08-24T04:30:07.380Z"
+    }
+  ],
+  "products": [
+    {
+      "_id": "prod_001",
+      "name": "Engineering Chemistry Textbook",
+      "description": "Used for first year B.Tech, excellent condition with no markings.",
+      "category": "📚 Books",
+      "price": 250,
+      "condition": "Good",
+      "images": [
+        "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=400"
+      ],
+      "pickupLocation": "Library",
+      "seller": "user_student_001",
+      "status": "active",
+      "createdAt": "2026-08-23T04:30:07.380Z"
+    },
+    {
+      "_id": "prod_002",
+      "name": "Scientific Calculator fx-991EX",
+      "description": "Casio fx-991EX ClassWiz scientific calculator. Perfect for algebra and calculus.",
+      "category": "💻 Electronics",
+      "price": 800,
+      "condition": "Like New",
+      "images": [
+        "https://images.unsplash.com/photo-1574607383476-f517f220d398?auto=format&fit=crop&q=80&w=400"
+      ],
+      "pickupLocation": "AB1",
+      "seller": "user_student_001",
+      "status": "active",
+      "createdAt": "2026-08-23T16:30:07.380Z"
+    },
+    {
+      "_id": "prod_003",
+      "name": "Single Bed Wooden Study Table",
+      "description": "Sturdy wooden table with drawers, ideal for hostel rooms.",
+      "category": "🪑 Furniture",
+      "price": 1200,
+      "condition": "Fair",
+      "images": [
+        "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?auto=format&fit=crop&q=80&w=400"
+      ],
+      "pickupLocation": "Hostel Gate",
+      "seller": "user_student_002",
+      "status": "active",
+      "createdAt": "2026-08-24T02:30:07.380Z"
+    },
+    {
+      "_id": "prod_004",
+      "name": "Decathlon Rockrider Bicycle",
+      "description": "18-speed gear mountain bike, needs minor brake tightening but drives perfectly.",
+      "category": "🚲 Cycles",
+      "price": 4500,
+      "condition": "Good",
+      "images": [
+        "https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=400"
+      ],
+      "pickupLocation": "Food Court",
+      "seller": "user_student_002",
+      "status": "sold",
+      "createdAt": "2026-08-22T04:30:07.380Z"
+    }
+  ],
+  "messages": []
+}
