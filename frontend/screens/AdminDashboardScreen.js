@@ -8,13 +8,19 @@ import {
   ActivityIndicator,
   FlatList,
   Alert,
-  SafeAreaView,
+  Platform,
   StatusBar
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL, THEME } from '../config';
 
 export default function AdminDashboardScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0);
+  const headerTopPadding = topInset > 0 ? topInset + 10 : 16;
+  const bottomPadding = insets.bottom > 0 ? insets.bottom + 24 : 32;
+
   const { token } = useContext(AuthContext);
   
   const [stats, setStats] = useState(null);
@@ -129,12 +135,17 @@ export default function AdminDashboardScreen({ navigation }) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={THEME.background} />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={THEME.cardBg} />
       
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+      <View style={[styles.header, { paddingTop: headerTopPadding }]}>
+        <TouchableOpacity 
+          style={styles.backBtn} 
+          onPress={() => navigation.goBack()}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          activeOpacity={0.8}
+        >
           <Text style={styles.backBtnText}>◀</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Admin Panel</Text>
@@ -145,18 +156,20 @@ export default function AdminDashboardScreen({ navigation }) {
         <TouchableOpacity
           style={[styles.tabBtn, subTab === 'stats' && styles.tabBtnActive]}
           onPress={() => setSubTab('stats')}
+          activeOpacity={0.8}
         >
           <Text style={[styles.tabText, subTab === 'stats' && styles.tabTextActive]}>Analytics</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tabBtn, subTab === 'users' && styles.tabBtnActive]}
           onPress={() => setSubTab('users')}
+          activeOpacity={0.8}
         >
           <Text style={[styles.tabText, subTab === 'users' && styles.tabTextActive]}>Users ({users.length})</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scrollContainer, { paddingBottom: bottomPadding }]} showsVerticalScrollIndicator={false}>
         {subTab === 'stats' ? (
           // Analytics View
           <View>
@@ -269,7 +282,7 @@ export default function AdminDashboardScreen({ navigation }) {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -281,7 +294,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 14,
     backgroundColor: THEME.cardBg,
     borderBottomWidth: 1,
     borderColor: THEME.border,
@@ -328,7 +342,6 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     padding: 16,
-    paddingBottom: 40,
   },
   grid: {
     flexDirection: 'row',
@@ -337,7 +350,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   card: {
-    width: '47%',
+    flexBasis: '47%',
+    flexGrow: 1,
     backgroundColor: THEME.cardBg,
     borderRadius: 12,
     padding: 16,

@@ -9,11 +9,11 @@ import {
   Image,
   ActivityIndicator,
   Alert,
-  SafeAreaView,
+  Platform,
   StatusBar,
-  KeyboardAvoidingView,
-  Platform
+  KeyboardAvoidingView
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL, THEME } from '../config';
@@ -41,6 +41,10 @@ const PICKUP_POINTS = [
 ];
 
 export default function AddProductScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0);
+  const headerTopPadding = topInset > 0 ? topInset + 12 : 20;
+
   const { token } = useContext(AuthContext);
   
   // Form States
@@ -164,14 +168,14 @@ export default function AddProductScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={THEME.background} />
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardContainer}
       >
-        <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-          <Text style={styles.pageTitle}>Post an Item</Text>
+        <ScrollView contentContainerStyle={[styles.scrollContainer, { paddingBottom: 40 }]} keyboardShouldPersistTaps="handled">
+          <Text style={[styles.pageTitle, { paddingTop: headerTopPadding }]}>Post an Item</Text>
 
           {/* Image Selection Area */}
           <View style={styles.section}>
@@ -320,7 +324,7 @@ export default function AddProductScreen({ navigation }) {
 
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 

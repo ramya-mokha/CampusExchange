@@ -9,10 +9,11 @@ import {
   Image,
   ActivityIndicator,
   ScrollView,
-  SafeAreaView,
   StatusBar,
-  Dimensions
+  Dimensions,
+  Platform
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL, THEME } from '../config';
@@ -22,31 +23,36 @@ const COLUMN_WIDTH = (width - 48) / 2;
 
 const CATEGORIES = [
   'All',
-  '📚 Books', 
-  '💻 Electronics', 
-  '🪑 Furniture', 
-  '🚲 Cycles', 
-  '👕 Clothing', 
-  '🎒 Hostel Essentials', 
-  '🔌 Accessories', 
+  '📚 Books',
+  '💻 Electronics',
+  '🪑 Furniture',
+  '🚲 Cycles',
+  '👕 Clothing',
+  '🎒 Hostel Essentials',
+  '🔌 Accessories',
   'Others'
 ];
 
 const PICKUP_POINTS = [
   'All Locations',
-  'Library', 
-  'AB1', 
-  'AB2', 
-  'Hostel Gate', 
-  'Food Court', 
+  'Library',
+  'AB1',
+  'AB2',
+  'Hostel Gate',
+  'Food Court',
   'Academic Block'
 ];
 
 export default function BrowseScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const { token } = useContext(AuthContext);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
+  // Dynamic top spacing ensuring search bar is moved slightly downward without overlapping status bar
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0);
+  const headerTopPadding = topInset > 0 ? topInset + 12 : 16;
+
   // Search & Filter state
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -55,16 +61,22 @@ export default function BrowseScreen({ navigation }) {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (overrideSearch, overrideCategory, overrideLocation, overrideMinPrice, overrideMaxPrice) => {
     try {
       setLoading(true);
+      const searchVal = overrideSearch !== undefined ? overrideSearch : search;
+      const catVal = overrideCategory !== undefined ? overrideCategory : selectedCategory;
+      const locVal = overrideLocation !== undefined ? overrideLocation : selectedLocation;
+      const minP = overrideMinPrice !== undefined ? overrideMinPrice : minPrice;
+      const maxP = overrideMaxPrice !== undefined ? overrideMaxPrice : maxPrice;
+
       let queryParams = [];
-      
-      if (search) queryParams.push(`search=${encodeURIComponent(search)}`);
-      if (selectedCategory !== 'All') queryParams.push(`category=${encodeURIComponent(selectedCategory)}`);
-      if (selectedLocation !== 'All Locations') queryParams.push(`pickupLocation=${encodeURIComponent(selectedLocation)}`);
-      if (minPrice) queryParams.push(`minPrice=${minPrice}`);
-      if (maxPrice) queryParams.push(`maxPrice=${maxPrice}`);
+      const trimmedSearch = (searchVal || '').trim();
+      if (trimmedSearch) queryParams.push(`search=${encodeURIComponent(trimmedSearch)}`);
+      if (catVal && catVal !== 'All') queryParams.push(`category=${encodeURIComponent(catVal)}`);
+      if (locVal && locVal !== 'All Locations') queryParams.push(`pickupLocation=${encodeURIComponent(locVal)}`);
+      if (minP) queryParams.push(`minPrice=${minP}`);
+      if (maxP) queryParams.push(`maxPrice=${maxP}`);
       queryParams.push('status=active'); // only fetch active products
 
       const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
@@ -75,24 +87,32 @@ export default function BrowseScreen({ navigation }) {
       });
       const data = await response.json();
       if (response.ok) {
-        setProducts(data);
+        setProducts(Array.isArray(data) ? data : []);
+      } else {
+        setProducts([]);
       }
     } catch (error) {
       console.error('Error loading listings:', error);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Re-fetch products when screen is focused or parameters change
+  // Re-fetch products when screen is focused
   useFocusEffect(
     useCallback(() => {
       fetchProducts();
-    }, [selectedCategory, selectedLocation])
+    }, [])
   );
 
   const handleSearchSubmit = () => {
     fetchProducts();
+  };
+
+  const handleCategorySelect = (cat) => {
+    setSelectedCategory(cat);
+    fetchProducts(search, cat, selectedLocation, minPrice, maxPrice);
   };
 
   const handleResetFilters = () => {
@@ -102,21 +122,20 @@ export default function BrowseScreen({ navigation }) {
     setMaxPrice('');
     setSearch('');
     setShowFilters(false);
-    // Trigger list reload
-    setTimeout(() => fetchProducts(), 0);
+    fetchProducts('', 'All', 'All Locations', '', '');
   };
 
   const renderProductItem = ({ item }) => {
     const isVitSeller = item.seller?.email?.endsWith('@vitstudent.ac.in') || item.seller?.email?.endsWith('@vit.ac.in');
-    
+
     return (
       <TouchableOpacity
         style={styles.productCard}
         onPress={() => navigation.navigate('ProductDetail', { productId: item._id })}
       >
-        <Image 
-          source={{ uri: item.images[0] || 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=400' }} 
-          style={styles.productImage} 
+        <Image
+          source={{ uri: item.images[0] || 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=400' }}
+          style={styles.productImage}
         />
         <View style={styles.badgeContainer}>
           <Text style={styles.conditionBadge}>{item.condition}</Text>
@@ -124,11 +143,11 @@ export default function BrowseScreen({ navigation }) {
             <Text style={styles.locationBadgeText}>📍 {item.pickupLocation}</Text>
           </View>
         </View>
-        
+
         <View style={styles.productInfo}>
           <Text style={styles.priceText}>₹{item.price}</Text>
           <Text style={styles.titleText} numberOfLines={1}>{item.name}</Text>
-          
+
           <View style={styles.sellerRow}>
             <Text style={styles.sellerName} numberOfLines={1}>By: {item.seller?.name || 'Student'}</Text>
             {isVitSeller && (
@@ -143,11 +162,11 @@ export default function BrowseScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={THEME.background} />
-      
+
       {/* Top Search & Filter Bar */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: headerTopPadding }]}>
         <View style={styles.searchBarContainer}>
           <TextInput
             style={styles.searchInput}
@@ -157,14 +176,22 @@ export default function BrowseScreen({ navigation }) {
             onChangeText={setSearch}
             onSubmitEditing={handleSearchSubmit}
             returnKeyType="search"
+            multiline={false}
+            numberOfLines={1}
+            autoCapitalize="none"
+            autoCorrect={false}
           />
-          <TouchableOpacity style={styles.searchButton} onPress={handleSearchSubmit}>
+          <TouchableOpacity 
+            style={styles.searchButton} 
+            onPress={handleSearchSubmit}
+            activeOpacity={0.8}
+          >
             <Text style={styles.searchButtonText}>🔍</Text>
           </TouchableOpacity>
         </View>
-        
-        <TouchableOpacity 
-          style={[styles.filterToggleBtn, showFilters && styles.filterToggleBtnActive]} 
+
+        <TouchableOpacity
+          style={[styles.filterToggleBtn, showFilters && styles.filterToggleBtnActive]}
           onPress={() => setShowFilters(!showFilters)}
         >
           <Text style={styles.filterToggleBtnText}>
@@ -237,7 +264,7 @@ export default function BrowseScreen({ navigation }) {
                 styles.categoryBubble,
                 selectedCategory === cat && styles.categoryBubbleActive
               ]}
-              onPress={() => setSelectedCategory(cat)}
+              onPress={() => handleCategorySelect(cat)}
             >
               <Text style={[
                 styles.categoryText,
@@ -257,7 +284,7 @@ export default function BrowseScreen({ navigation }) {
       ) : products.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>📦</Text>
-          <Text style={styles.emptyTitle}>No Listings Found</Text>
+          <Text style={styles.emptyTitle}>No items found</Text>
           <Text style={styles.emptySubtitle}>Try searching for something else or clearing filters.</Text>
           <TouchableOpacity style={styles.reloadBtn} onPress={handleResetFilters}>
             <Text style={styles.reloadBtnText}>Reset Search</Text>
@@ -276,7 +303,7 @@ export default function BrowseScreen({ navigation }) {
           refreshing={loading}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -286,29 +313,35 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.background,
   },
   header: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 14,
     backgroundColor: THEME.cardBg,
     borderBottomWidth: 1,
     borderColor: THEME.border,
   },
   searchBarContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: THEME.inputBg,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: THEME.border,
+    height: 48,
     overflow: 'hidden',
   },
   searchInput: {
     flex: 1,
-    height: 48,
+    height: '100%',
     color: THEME.text,
-    paddingHorizontal: 16,
-    fontSize: 15,
+    paddingHorizontal: 14,
+    paddingVertical: 0,
+    fontSize: 14,
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
   searchButton: {
     width: 48,
-    height: 48,
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: THEME.primary,

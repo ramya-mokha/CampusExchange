@@ -15,9 +15,7 @@
       "email": "jane.doe2023@vitstudent.ac.in",
       "passwordHash": "$2a$08$udAhakYViEdeI6J6QWqyUuNlF5kBwoszgpTnHZ5iqTB.ANtR5kCXy",
       "role": "student",
-      "wishlist": [
-        "prod_003"
-      ],
+      "wishlist": [],
       "createdAt": "2026-08-24T04:30:07.380Z"
     },
     {
@@ -88,12 +86,12 @@
       ],
       "pickupLocation": "Food Court",
       "seller": "user_student_002",
-      "status": "sold",
+      "status": "active",
       "createdAt": "2026-08-22T04:30:07.380Z"
     },
     {
       "_id": "prod_du4qiwcff",
-      "name": "Fx-91 calculater",
+      "name": "Fx-91 calculator",
       "description": "Working good ",
       "category": "💻 Electronics",
       "price": 500,
@@ -105,7 +103,32 @@
       "seller": "user_student_001",
       "status": "active",
       "createdAt": "2026-08-24T07:33:41.090Z"
+    },
+    {
+      "_id": "prod_34wt6rjz5",
+      "name": "Pen",
+      "description": "New pen ",
+      "category": "Others",
+      "price": 100,
+      "condition": "Good",
+      "pickupLocation": "AB1",
+      "images": [
+        "http://192.168.1.9:5000/uploads/images-1788369223011-396150430.jpeg"
+      ],
+      "seller": "user_student_001",
+      "status": "active",
+      "createdAt": "2026-09-02T17:13:43.141Z"
     }
   ],
-  "messages": []
+  "messages": [
+    {
+      "_id": "mess_da54qzyca",
+      "chatId": "user_student_001_user_student_002",
+      "sender": "user_student_001",
+      "recipient": "user_student_002",
+      "text": "Hi",
+      "timestamp": "2026-09-02T17:28:19.474Z",
+      "createdAt": "2026-09-02T17:28:19.475Z"
+    }
+  ]
 }

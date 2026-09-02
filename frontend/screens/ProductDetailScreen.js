@@ -7,14 +7,19 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
-  SafeAreaView,
+  Platform,
   StatusBar,
   Alert
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL, THEME } from '../config';
 
 export default function ProductDetailScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0);
+  const headerTopPadding = topInset > 0 ? topInset + 8 : 16;
+
   const { productId } = route.params;
   const { user, token, updateWishlist } = useContext(AuthContext);
   

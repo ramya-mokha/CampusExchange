@@ -31,16 +31,20 @@ const getProducts = async (req, res) => {
       filter.seller = seller;
     }
 
-    // Text Search (Name and Description)
-    if (search) {
+    // Text Search (Name, Title, Description, and Category)
+    if (search && search.trim()) {
+      const trimmedSearch = search.trim();
+      const regex = { $regex: trimmedSearch, $options: 'i' };
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
+        { name: regex },
+        { title: regex },
+        { description: regex },
+        { category: regex }
       ];
     }
 
     // Category Filter
-    if (category) {
+    if (category && category !== 'All') {
       filter.category = category;
     }
 
@@ -50,7 +54,7 @@ const getProducts = async (req, res) => {
     }
 
     // Pickup Location Filter
-    if (pickupLocation) {
+    if (pickupLocation && pickupLocation !== 'All Locations') {
       filter.pickupLocation = pickupLocation;
     }
 
@@ -61,22 +65,25 @@ const getProducts = async (req, res) => {
       if (maxPrice) filter.price.$lte = Number(maxPrice);
     }
 
-    // Support OR queries in Mock DB if needed (mockDb handles simple queries, let's implement fallback support for $or search query)
+    // Support OR queries in Mock DB if needed
     const isMock = require('../config/db').isUsingMock();
     let products;
     if (isMock) {
-      // In mock DB, we do search separately if $or is present because mock handles basic matches
       if (filter.$or) {
-        const searchVal = search.toLowerCase();
+        const searchVal = search.trim().toLowerCase();
         delete filter.$or;
         const tempProducts = await Product.find(filter).populate('seller');
-        products = tempProducts.results.filter(p => 
-          p.name.toLowerCase().includes(searchVal) || 
-          p.description.toLowerCase().includes(searchVal)
+        const list = Array.isArray(tempProducts) ? tempProducts : tempProducts.results || [];
+        products = list.filter(p => 
+          (p.name && p.name.toLowerCase().includes(searchVal)) || 
+          (p.title && p.title.toLowerCase().includes(searchVal)) ||
+          (p.description && p.description.toLowerCase().includes(searchVal)) ||
+          (p.category && p.category.toLowerCase().includes(searchVal))
         );
+        products.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
       } else {
         const queryRes = await Product.find(filter).populate('seller').sort({ createdAt: -1 });
-        products = queryRes.results || queryRes;
+        products = Array.isArray(queryRes) ? queryRes : queryRes.results || [];
       }
     } else {
       // Mongo Query
