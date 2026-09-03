@@ -15,7 +15,9 @@
       "email": "jane.doe2023@vitstudent.ac.in",
       "passwordHash": "$2a$08$udAhakYViEdeI6J6QWqyUuNlF5kBwoszgpTnHZ5iqTB.ANtR5kCXy",
       "role": "student",
-      "wishlist": [],
+      "wishlist": [
+        "prod_004"
+      ],
       "createdAt": "2026-08-24T04:30:07.380Z"
     },
     {
@@ -26,6 +28,17 @@
       "role": "student",
       "wishlist": [],
       "createdAt": "2026-08-24T04:30:07.380Z"
+    },
+    {
+      "_id": "user_1bw74mxsc",
+      "name": "Janu",
+      "email": "janu2024@vitstudent.ac.in",
+      "passwordHash": "$2a$10$48wzKxGY1Whzd..UEdEnYOOzAh3wDiu4cCZlG0HIKJpT9fqdL7Ivi",
+      "role": "student",
+      "wishlist": [
+        "prod_g0nwv1tsm"
+      ],
+      "createdAt": "2026-09-03T17:10:47.155Z"
     }
   ],
   "products": [
@@ -101,23 +114,24 @@
         "https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=400"
       ],
       "seller": "user_student_001",
-      "status": "active",
+      "status": "sold",
       "createdAt": "2026-08-24T07:33:41.090Z"
     },
     {
-      "_id": "prod_34wt6rjz5",
+      "_id": "prod_g0nwv1tsm",
       "name": "Pen",
-      "description": "New pen ",
+      "description": "New pen  ",
       "category": "Others",
       "price": 100,
       "condition": "Good",
       "pickupLocation": "AB1",
       "images": [
-        "http://192.168.1.9:5000/uploads/images-1788369223011-396150430.jpeg"
+        "http://192.168.1.9:5000/uploads/images-1788454003723-244343317.jpeg",
+        "http://192.168.1.9:5000/uploads/images-1788454003783-880847761.jpeg"
       ],
       "seller": "user_student_001",
       "status": "active",
-      "createdAt": "2026-09-02T17:13:43.141Z"
+      "createdAt": "2026-09-03T16:46:43.828Z"
     }
   ],
   "messages": [
@@ -129,6 +143,24 @@
       "text": "Hi",
       "timestamp": "2026-09-02T17:28:19.474Z",
       "createdAt": "2026-09-02T17:28:19.475Z"
+    },
+    {
+      "_id": "mess_nksnom1c8",
+      "chatId": "user_1bw74mxsc_user_student_001",
+      "sender": "user_1bw74mxsc",
+      "recipient": "user_student_001",
+      "text": "Hi",
+      "timestamp": "2026-09-03T17:11:11.167Z",
+      "createdAt": "2026-09-03T17:11:11.171Z"
+    },
+    {
+      "_id": "mess_4el6r2pqd",
+      "chatId": "user_1bw74mxsc_user_student_001",
+      "sender": "user_student_001",
+      "recipient": "user_1bw74mxsc",
+      "text": "Hi",
+      "timestamp": "2026-09-03T17:11:36.106Z",
+      "createdAt": "2026-09-03T17:11:36.109Z"
     }
   ]
 }
