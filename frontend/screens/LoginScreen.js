@@ -40,7 +40,12 @@ export default function LoginScreen({ navigation }) {
       style={styles.container}
     >
       <StatusBar barStyle="light-content" backgroundColor={THEME.background} />
-      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+      <ScrollView 
+        contentContainerStyle={styles.scrollContainer} 
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets={true}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.headerArea}>
           <Text style={styles.appTitle}>Campus Exchange</Text>
           <Text style={styles.appTagline}>Buy. Sell. Reuse. Save.</Text>

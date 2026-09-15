@@ -6,14 +6,19 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  SafeAreaView,
+  Platform,
   StatusBar
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL, THEME } from '../config';
 
 export default function ChatsScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0);
+  const headerTopPadding = topInset > 0 ? topInset + 12 : 20;
+
   const { token } = useContext(AuthContext);
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -93,10 +98,10 @@ export default function ChatsScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={THEME.background} />
       
-      <Text style={styles.pageTitle}>Conversations</Text>
+      <Text style={[styles.pageTitle, { paddingTop: headerTopPadding }]}>Conversations</Text>
       
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -122,7 +127,7 @@ export default function ChatsScreen({ navigation }) {
           refreshing={loading}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -136,7 +141,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: THEME.text,
     paddingHorizontal: 20,
-    paddingTop: 20,
     marginBottom: 16,
   },
   listContainer: {

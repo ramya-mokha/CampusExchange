@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,40 +9,89 @@ import {
   Image,
   ActivityIndicator,
   Alert,
-  SafeAreaView,
+  Platform,
   StatusBar,
   KeyboardAvoidingView,
-  Platform
+  Keyboard
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL, THEME } from '../config';
 
 const CATEGORIES = [
-  '📚 Books', 
-  '💻 Electronics', 
-  '🪑 Furniture', 
-  '🚲 Cycles', 
-  '👕 Clothing', 
-  '🎒 Hostel Essentials', 
-  '🔌 Accessories', 
+  '📚 Books',
+  '💻 Electronics',
+  '🪑 Furniture',
+  '🚲 Cycles',
+  '👕 Clothing',
+  '🎒 Hostel Essentials',
+  '🔌 Accessories',
   'Others'
 ];
 
 const CONDITIONS = ['New', 'Like New', 'Good', 'Fair'];
 
 const PICKUP_POINTS = [
-  'Library', 
-  'AB1', 
-  'AB2', 
-  'Hostel Gate', 
-  'Food Court', 
+  'Library',
+  'AB1',
+  'AB2',
+  'Hostel Gate',
+  'Food Court',
   'Academic Block'
 ];
 
 export default function AddProductScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0);
+  const headerTopPadding = topInset > 0 ? topInset + 12 : 20;
+
   const { token } = useContext(AuthContext);
-  
+  const scrollViewRef = useRef(null);
+  const preKeyboardScrollY = useRef(0);
+  const keyboardActive = useRef(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => {
+        keyboardActive.current = true;
+        setKeyboardVisible(true);
+      }
+    );
+
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+        keyboardActive.current = false;
+        // Smoothly restore screen to its exact pre-keyboard position with zero extra gap
+        setTimeout(() => {
+          scrollViewRef.current?.scrollTo({ y: preKeyboardScrollY.current, animated: true });
+        }, 50);
+      }
+    );
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const handleScroll = (event) => {
+    if (!keyboardActive.current) {
+      preKeyboardScrollY.current = event.nativeEvent.contentOffset.y;
+    }
+  };
+
+  const handleInputFocus = (targetY) => {
+    keyboardActive.current = true;
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: targetY, animated: true });
+    }, 120);
+  };
+
   // Form States
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -105,7 +154,7 @@ export default function AddProductScreen({ navigation }) {
 
     try {
       setSubmitting(true);
-      
+
       const formData = new FormData();
       formData.append('name', name);
       formData.append('description', description);
@@ -164,14 +213,26 @@ export default function AddProductScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={THEME.background} />
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
         style={styles.keyboardContainer}
       >
-        <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-          <Text style={styles.pageTitle}>Post an Item</Text>
+        <ScrollView 
+          ref={scrollViewRef}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          contentContainerStyle={[
+            styles.scrollContainer,
+            { paddingBottom: keyboardVisible ? 140 : 20 }
+          ]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={[styles.pageTitle, { paddingTop: headerTopPadding }]}>Post an Item</Text>
 
           {/* Image Selection Area */}
           <View style={styles.section}>
@@ -185,7 +246,7 @@ export default function AddProductScreen({ navigation }) {
                   </TouchableOpacity>
                 </View>
               ))}
-              
+
               {images.length < 5 && (
                 <View style={styles.pickerButtonsContainer}>
                   <TouchableOpacity style={styles.imagePickerBtn} onPress={() => handlePickImage(false)}>
@@ -211,6 +272,7 @@ export default function AddProductScreen({ navigation }) {
               placeholderTextColor={THEME.textMuted}
               value={name}
               onChangeText={setName}
+              onFocus={() => handleInputFocus(140)}
             />
           </View>
 
@@ -223,6 +285,7 @@ export default function AddProductScreen({ navigation }) {
               keyboardType="numeric"
               value={price}
               onChangeText={setPrice}
+              onFocus={() => handleInputFocus(220)}
             />
           </View>
 
@@ -303,6 +366,7 @@ export default function AddProductScreen({ navigation }) {
               numberOfLines={4}
               value={description}
               onChangeText={setDescription}
+              onFocus={() => handleInputFocus(460)}
             />
           </View>
 
@@ -320,7 +384,7 @@ export default function AddProductScreen({ navigation }) {
 
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -333,23 +397,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContainer: {
-    padding: 20,
-    paddingBottom: 40,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 20,
   },
   pageTitle: {
     fontSize: 28,
     fontWeight: '800',
     color: THEME.text,
-    marginBottom: 20,
+    marginBottom: 14,
   },
   section: {
-    marginBottom: 20,
+    marginBottom: 14,
   },
   label: {
     fontSize: 14,
     fontWeight: '700',
     color: THEME.text,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   input: {
     backgroundColor: THEME.cardBg,
@@ -357,24 +422,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: THEME.border,
     color: THEME.text,
-    fontSize: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    fontSize: 15,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
   multilineInput: {
-    height: 100,
+    height: 88,
     textAlignVertical: 'top',
   },
   hint: {
     fontSize: 11,
     color: THEME.textMuted,
-    marginTop: 4,
+    marginTop: 3,
   },
   imagesRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginTop: 4,
+    marginTop: 3,
   },
   imageWrapper: {
     position: 'relative',
@@ -481,7 +546,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginTop: 8,
+    marginTop: 6,
   },
   locationBtn: {
     backgroundColor: THEME.cardBg,
@@ -506,10 +571,10 @@ const styles = StyleSheet.create({
   },
   submitBtn: {
     backgroundColor: THEME.secondary,
-    paddingVertical: 14,
+    paddingVertical: 13,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 6,
   },
   submitBtnText: {
     color: THEME.white,

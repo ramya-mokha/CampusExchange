@@ -7,15 +7,20 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
-  SafeAreaView,
+  Platform,
   StatusBar,
   Alert
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL, THEME } from '../config';
 
 export default function WishlistScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0);
+  const headerTopPadding = topInset > 0 ? topInset + 12 : 20;
+
   const { token, updateWishlist } = useContext(AuthContext);
   const [wishlistItems, setWishlistItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -126,10 +131,10 @@ export default function WishlistScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={THEME.background} />
       
-      <Text style={styles.pageTitle}>Saved Wishlist</Text>
+      <Text style={[styles.pageTitle, { paddingTop: headerTopPadding }]}>Saved Wishlist</Text>
       
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -140,7 +145,7 @@ export default function WishlistScreen({ navigation }) {
           <Text style={styles.emptyIcon}>❤️</Text>
           <Text style={styles.emptyTitle}>Wishlist is Empty</Text>
           <Text style={styles.emptySubtitle}>Tap the heart icon on any listing details to save it here.</Text>
-          <TouchableOpacity style={styles.browseBtn} onPress={() => navigation.navigate('Browse')}>
+          <TouchableOpacity style={styles.browseBtn} onPress={() => navigation.navigate('Browse')} activeOpacity={0.8}>
             <Text style={styles.browseBtnText}>Explore Listings</Text>
           </TouchableOpacity>
         </View>
@@ -155,7 +160,7 @@ export default function WishlistScreen({ navigation }) {
           refreshing={loading}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -169,7 +174,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: THEME.text,
     paddingHorizontal: 20,
-    paddingTop: 20,
     marginBottom: 16,
   },
   listContainer: {

@@ -1,4 +1,3 @@
-import { Platform } from 'react-native';
 
 // For Android Emulator, localhost is accessed via 10.0.2.2.
 // For Expo Go on a real physical Android phone, change this to your machine's local Wi-Fi IP address (e.g. 192.168.1.100).

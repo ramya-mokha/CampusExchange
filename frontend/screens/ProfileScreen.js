@@ -7,15 +7,20 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
-  SafeAreaView,
+  Platform,
   StatusBar,
   Alert
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL, THEME } from '../config';
 
 export default function ProfileScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0);
+  const headerTopPadding = topInset > 0 ? topInset + 12 : 20;
+
   const { user, token, logout } = useContext(AuthContext);
   
   const [products, setProducts] = useState([]);
@@ -61,6 +66,7 @@ export default function ProfileScreen({ navigation }) {
       <TouchableOpacity 
         style={styles.card}
         onPress={() => navigation.navigate('ProductDetail', { productId: item._id })}
+        activeOpacity={0.8}
       >
         <Image 
           source={{ uri: item.images[0] || 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=400' }} 
@@ -76,12 +82,24 @@ export default function ProfileScreen({ navigation }) {
     );
   };
 
+  const renderFooter = () => (
+    <View style={styles.footerContainer}>
+      <TouchableOpacity 
+        style={styles.logoutBtn} 
+        onPress={handleLogout}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.logoutBtnText}>Sign Out 🚪</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={THEME.background} />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={THEME.cardBg} />
       
       {/* Profile Header Block */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: headerTopPadding }]}>
         <View style={styles.profileRow}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
@@ -90,14 +108,14 @@ export default function ProfileScreen({ navigation }) {
           </View>
           <View style={styles.userDetails}>
             <View style={styles.nameRow}>
-              <Text style={styles.name}>{user?.name || 'Student'}</Text>
+              <Text style={styles.name} numberOfLines={1}>{user?.name || 'Student'}</Text>
               {user?.isVitVerified && (
                 <View style={styles.vitBadge}>
                   <Text style={styles.vitBadgeText}>VIT Verified</Text>
                 </View>
               )}
             </View>
-            <Text style={styles.email}>{user?.email}</Text>
+            <Text style={styles.email} numberOfLines={1}>{user?.email}</Text>
             <Text style={styles.roleText}>{user?.role === 'admin' ? '🔑 Administrator' : '🎓 Student Member'}</Text>
           </View>
         </View>
@@ -119,6 +137,7 @@ export default function ProfileScreen({ navigation }) {
           <TouchableOpacity 
             style={styles.adminConsoleBtn}
             onPress={() => navigation.navigate('AdminDashboard')}
+            activeOpacity={0.8}
           >
             <Text style={styles.adminConsoleBtnText}>🛡️ Open Admin Moderation Panel</Text>
           </TouchableOpacity>
@@ -130,6 +149,7 @@ export default function ProfileScreen({ navigation }) {
         <TouchableOpacity
           style={[styles.tab, activeTab === 'active' && styles.tabActive]}
           onPress={() => setActiveTab('active')}
+          activeOpacity={0.8}
         >
           <Text style={[styles.tabText, activeTab === 'active' && styles.tabTextActive]}>
             Active listings ({activeCount})
@@ -138,6 +158,7 @@ export default function ProfileScreen({ navigation }) {
         <TouchableOpacity
           style={[styles.tab, activeTab === 'sold' && styles.tabActive]}
           onPress={() => setActiveTab('sold')}
+          activeOpacity={0.8}
         >
           <Text style={[styles.tabText, activeTab === 'sold' && styles.tabTextActive]}>
             Sold listings ({soldCount})
@@ -150,12 +171,6 @@ export default function ProfileScreen({ navigation }) {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={THEME.primary} />
         </View>
-      ) : filteredProducts.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>📂</Text>
-          <Text style={styles.emptyTitle}>No Listings Here</Text>
-          <Text style={styles.emptySubtitle}>You don't have any {activeTab} listings currently.</Text>
-        </View>
       ) : (
         <FlatList
           data={filteredProducts}
@@ -165,14 +180,17 @@ export default function ProfileScreen({ navigation }) {
           showsVerticalScrollIndicator={false}
           onRefresh={fetchMyProducts}
           refreshing={loading}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyIcon}>📂</Text>
+              <Text style={styles.emptyTitle}>No Listings Here</Text>
+              <Text style={styles.emptySubtitle}>You don't have any {activeTab} listings currently.</Text>
+            </View>
+          }
+          ListFooterComponent={renderFooter}
         />
       )}
-
-      {/* Logout button */}
-      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-        <Text style={styles.logoutBtnText}>Sign Out 🚪</Text>
-      </TouchableOpacity>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -183,7 +201,8 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: THEME.cardBg,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 18,
     borderBottomWidth: 1,
     borderColor: THEME.border,
   },
@@ -198,6 +217,7 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.primary,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 16,
   },
   avatarText: {
     color: THEME.white,
@@ -205,12 +225,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   userDetails: {
-    marginLeft: 16,
     flex: 1,
+    justifyContent: 'center',
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
   },
   name: {
     fontSize: 18,
@@ -242,8 +263,8 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    marginTop: 20,
-    gap: 16,
+    marginTop: 16,
+    gap: 12,
   },
   statBox: {
     flex: 1,
@@ -263,13 +284,13 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   adminConsoleBtn: {
-    backgroundColor: 'rgba(168, 85, 247, 0.1)',
+    backgroundColor: 'rgba(168, 85, 247, 0.12)',
     borderWidth: 1,
     borderColor: THEME.accent,
     borderRadius: 8,
     paddingVertical: 10,
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 14,
   },
   adminConsoleBtnText: {
     color: THEME.accent,
@@ -302,7 +323,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 24,
   },
   card: {
     flexDirection: 'row',
@@ -345,16 +366,16 @@ const styles = StyleSheet.create({
     color: THEME.textMuted,
     marginTop: 2,
   },
+  footerContainer: {
+    paddingTop: 12,
+    paddingBottom: 24,
+  },
   logoutBtn: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-    left: 20,
     backgroundColor: THEME.danger,
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
-    elevation: 4,
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -371,21 +392,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyContainer: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
-    marginTop: 40,
+    paddingHorizontal: 30,
+    paddingVertical: 36,
   },
   emptyIcon: {
-    fontSize: 48,
-    marginBottom: 12,
+    fontSize: 44,
+    marginBottom: 10,
   },
   emptyTitle: {
     color: THEME.text,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   emptySubtitle: {
     color: THEME.textMuted,
@@ -393,3 +413,4 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 });
+

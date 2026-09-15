@@ -123,7 +123,7 @@ const initializeSamples = () => {
       images: ['https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=400'],
       pickupLocation: 'Food Court',
       seller: 'user_student_002',
-      status: 'sold',
+      status: 'active',
       createdAt: new Date(Date.now() - 3600000 * 48).toISOString() // 2 days ago
     });
   }
@@ -223,6 +223,24 @@ class MockModel {
         for (const key in filter) {
           const filterVal = filter[key];
           
+          // Support $or matching
+          if (key === '$or' && Array.isArray(filterVal)) {
+            const matchesOr = filterVal.some(condition => {
+              for (const subKey in condition) {
+                const subVal = condition[subKey];
+                if (subVal && subVal.$regex) {
+                  const regex = new RegExp(subVal.$regex, subVal.$options || 'i');
+                  if (regex.test(item[subKey] || '')) return true;
+                } else if (item[subKey] === subVal) {
+                  return true;
+                }
+              }
+              return false;
+            });
+            if (!matchesOr) return false;
+            continue;
+          }
+
           // Support regex matching
           if (filterVal && filterVal.$regex) {
             const regex = new RegExp(filterVal.$regex, filterVal.$options || 'i');

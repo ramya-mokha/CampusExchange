@@ -9,9 +9,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  SafeAreaView,
   StatusBar
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import io from 'socket.io-client';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL, WS_URL, THEME } from '../config';
@@ -22,7 +22,8 @@ const getChatRoomId = (uid1, uid2) => {
 };
 
 export default function ChatRoomScreen({ route, navigation }) {
-  const { otherUserId, otherUserName, itemInfo } = route.params;
+  const insets = useSafeAreaInsets();
+  const { otherUserId, otherUserName, itemInfo } = route.params || {};
   const { user, token } = useContext(AuthContext);
   
   const [messages, setMessages] = useState([]);
@@ -33,6 +34,11 @@ export default function ChatRoomScreen({ route, navigation }) {
   const socketRef = useRef(null);
   const flatListRef = useRef(null);
   const chatId = getChatRoomId(user._id, otherUserId);
+
+  // Dynamic status bar and bottom navigation padding
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0);
+  const headerTopPadding = topInset > 0 ? topInset + 10 : 12;
+  const bottomPadding = insets.bottom > 0 ? insets.bottom + 8 : 14;
 
   // Load message logs
   const fetchMessages = async () => {
@@ -119,16 +125,22 @@ export default function ChatRoomScreen({ route, navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={THEME.background} />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={THEME.cardBg} />
       
-      {/* Header bar showing other user details */}
-      <View style={styles.headerBar}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+      {/* Header bar showing other user details safely below status bar */}
+      <View style={[styles.headerBar, { paddingTop: headerTopPadding }]}>
+        <TouchableOpacity 
+          style={styles.backBtn} 
+          onPress={() => navigation.goBack()}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <Text style={styles.backBtnText}>◀</Text>
         </TouchableOpacity>
-        <View>
-          <Text style={styles.headerTitle}>{otherUserName}</Text>
+        <View style={styles.headerInfo}>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {otherUserName || 'Seller'}
+          </Text>
           <View style={styles.statusRow}>
             <View style={[styles.statusDot, connected ? styles.statusOnline : styles.statusOffline]} />
             <Text style={styles.statusText}>{connected ? 'Online' : 'Reconnecting...'}</Text>
@@ -145,30 +157,32 @@ export default function ChatRoomScreen({ route, navigation }) {
         </View>
       )}
 
-      {/* Message history */}
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={THEME.primary} />
-        </View>
-      ) : (
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessageBubble}
-          keyExtractor={(item, idx) => item._id || idx.toString()}
-          contentContainerStyle={styles.messageList}
-          showsVerticalScrollIndicator={false}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-          onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        />
-      )}
-
-      {/* Bottom Text Inputs */}
+      {/* Chat messages & keyboard area */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        style={styles.keyboardContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={styles.inputBar}>
+        {/* Message history */}
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={THEME.primary} />
+          </View>
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessageBubble}
+            keyExtractor={(item, idx) => item._id || idx.toString()}
+            style={styles.messageListStyle}
+            contentContainerStyle={styles.messageList}
+            showsVerticalScrollIndicator={false}
+            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          />
+        )}
+
+        {/* Bottom Text Inputs safely positioned above bottom navigation */}
+        <View style={[styles.inputBar, { paddingBottom: bottomPadding }]}>
           <TextInput
             style={styles.chatInput}
             placeholder="Type your message..."
@@ -176,17 +190,20 @@ export default function ChatRoomScreen({ route, navigation }) {
             value={inputText}
             onChangeText={setInputText}
             multiline
+            maxLength={1000}
+            textAlignVertical="center"
           />
           <TouchableOpacity 
             style={[styles.sendBtn, !inputText.trim() && styles.sendBtnDisabled]} 
             onPress={handleSend}
             disabled={!inputText.trim()}
+            activeOpacity={0.8}
           >
             <Text style={styles.sendBtnText}>Send</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -195,10 +212,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: THEME.background,
   },
+  keyboardContainer: {
+    flex: 1,
+  },
   headerBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingBottom: 12,
     paddingHorizontal: 16,
     backgroundColor: THEME.cardBg,
     borderBottomWidth: 1,
@@ -215,6 +235,10 @@ const styles = StyleSheet.create({
     color: THEME.primary,
     fontSize: 18,
   },
+  headerInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
   headerTitle: {
     fontSize: 16,
     fontWeight: '700',
@@ -226,10 +250,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 4,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    marginRight: 5,
   },
   statusOnline: {
     backgroundColor: THEME.secondary,
@@ -238,7 +262,7 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.warning,
   },
   statusText: {
-    fontSize: 10,
+    fontSize: 11,
     color: THEME.textMuted,
   },
   productBanner: {
@@ -260,9 +284,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  messageListStyle: {
+    flex: 1,
+  },
   messageList: {
     padding: 16,
-    paddingBottom: 24,
+    paddingBottom: 16,
+    flexGrow: 1,
+    justifyContent: 'flex-end',
   },
   bubbleWrapper: {
     flexDirection: 'row',
@@ -276,10 +305,10 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   bubble: {
-    maxWidth: '75%',
+    maxWidth: '78%',
     borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 9,
     position: 'relative',
   },
   bubbleMe: {
@@ -298,15 +327,16 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   bubbleTime: {
-    color: 'rgba(248, 250, 252, 0.6)',
-    fontSize: 9,
+    color: 'rgba(248, 250, 252, 0.65)',
+    fontSize: 10,
     alignSelf: 'flex-end',
     marginTop: 4,
   },
   inputBar: {
     flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
+    alignItems: 'flex-end',
+    paddingTop: 10,
+    paddingHorizontal: 12,
     backgroundColor: THEME.cardBg,
     borderTopWidth: 1,
     borderColor: THEME.border,
@@ -318,14 +348,20 @@ const styles = StyleSheet.create({
     color: THEME.text,
     fontSize: 14,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    maxHeight: 80,
+    paddingTop: Platform.OS === 'ios' ? 8 : 6,
+    paddingBottom: Platform.OS === 'ios' ? 8 : 6,
+    minHeight: 40,
+    maxHeight: 100,
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
   sendBtn: {
     backgroundColor: THEME.secondary,
     borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 18,
     marginLeft: 8,
   },
   sendBtnDisabled: {
@@ -337,3 +373,4 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 });
+
