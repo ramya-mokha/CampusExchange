@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL, THEME } from '../config';
 
@@ -45,7 +46,7 @@ const PICKUP_POINTS = [
 
 export default function BrowseScreen({ navigation }) {
   const insets = useSafeAreaInsets();
-  const { token } = useContext(AuthContext);
+  const { token, user, updateWishlist } = useContext(AuthContext);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -125,33 +126,91 @@ export default function BrowseScreen({ navigation }) {
     fetchProducts('', 'All', 'All Locations', '', '');
   };
 
+  const handleToggleWishlist = async (productId, e) => {
+    e?.stopPropagation?.();
+    if (!token) return;
+    try {
+      const currentList = (user?.wishlist || []).map(id => id.toString());
+      const isCurrentlySaved = currentList.includes(productId.toString());
+      let newWishlist;
+      if (isCurrentlySaved) {
+        newWishlist = currentList.filter(id => id !== productId.toString());
+      } else {
+        newWishlist = [...currentList, productId.toString()];
+      }
+      updateWishlist(newWishlist);
+
+      const res = await fetch(`${API_URL}/products/${productId}/wishlist`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok && data.wishlist) {
+        updateWishlist(data.wishlist);
+      }
+    } catch (err) {
+      console.error('Toggle wishlist error in Browse:', err);
+    }
+  };
+
   const renderProductItem = ({ item }) => {
     const isVitSeller = item.seller?.email?.endsWith('@vitstudent.ac.in') || item.seller?.email?.endsWith('@vit.ac.in');
+    const isWishlisted = (user?.wishlist || []).map(id => id.toString()).includes(item._id?.toString());
 
     return (
       <TouchableOpacity
         style={styles.productCard}
         onPress={() => navigation.navigate('ProductDetail', { productId: item._id })}
+        activeOpacity={0.88}
       >
-        <Image
-          source={{ uri: item.images[0] || 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=400' }}
-          style={styles.productImage}
-        />
-        <View style={styles.badgeContainer}>
-          <Text style={styles.conditionBadge}>{item.condition}</Text>
-          <View style={styles.locationBadge}>
-            <Text style={styles.locationBadgeText}>📍 {item.pickupLocation}</Text>
-          </View>
+        <View style={styles.imageWrapper}>
+          <Image
+            source={{ uri: item.images?.[0] || 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=400' }}
+            style={styles.productImage}
+          />
+          {item.condition ? (
+            <View style={styles.badgeContainer}>
+              <View style={styles.conditionBadge}>
+                <Text style={styles.conditionBadgeText}>{item.condition}</Text>
+              </View>
+            </View>
+          ) : null}
+
+          {/* Quick Wishlist Toggle */}
+          <TouchableOpacity
+            style={styles.cardWishlistBtn}
+            onPress={(e) => handleToggleWishlist(item._id, e)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            activeOpacity={0.75}
+          >
+            <Ionicons
+              name={isWishlisted ? "heart" : "heart-outline"}
+              size={15}
+              color={isWishlisted ? "#E11D48" : THEME.text}
+            />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.productInfo}>
-          <Text style={styles.priceText}>₹{item.price}</Text>
+          {item.category ? (
+            <Text style={styles.cardCategoryText} numberOfLines={1}>{item.category}</Text>
+          ) : null}
+
           <Text style={styles.titleText} numberOfLines={1}>{item.name}</Text>
+          <Text style={styles.priceText}>₹{item.price}</Text>
+
+          <View style={styles.locationRow}>
+            <Ionicons name="location-outline" size={12} color={THEME.textMuted} />
+            <Text style={styles.locationText} numberOfLines={1}>{item.pickupLocation}</Text>
+          </View>
 
           <View style={styles.sellerRow}>
-            <Text style={styles.sellerName} numberOfLines={1}>By: {item.seller?.name || 'Student'}</Text>
+            <Text style={styles.sellerName} numberOfLines={1}>{item.seller?.name || 'Student'}</Text>
             {isVitSeller && (
               <View style={styles.vitBadge}>
+                <Ionicons name="checkmark-circle" size={10} color={THEME.primary} />
                 <Text style={styles.vitBadgeText}>VIT</Text>
               </View>
             )}
@@ -163,41 +222,45 @@ export default function BrowseScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={THEME.background} />
+      <StatusBar barStyle="dark-content" backgroundColor={THEME.background} />
 
       {/* Top Search & Filter Bar */}
       <View style={[styles.header, { paddingTop: headerTopPadding }]}>
-        <View style={styles.searchBarContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search textbooks, bicycles, calculators..."
-            placeholderTextColor={THEME.textMuted}
-            value={search}
-            onChangeText={setSearch}
-            onSubmitEditing={handleSearchSubmit}
-            returnKeyType="search"
-            multiline={false}
-            numberOfLines={1}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          <TouchableOpacity 
-            style={styles.searchButton} 
-            onPress={handleSearchSubmit}
+        <View style={styles.searchRow}>
+          <View style={styles.searchBarContainer}>
+            <Ionicons name="search-outline" size={18} color={THEME.textMuted} style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search books, cycles, calculators..."
+              placeholderTextColor={THEME.textMuted}
+              value={search}
+              onChangeText={setSearch}
+              onSubmitEditing={handleSearchSubmit}
+              returnKeyType="search"
+              multiline={false}
+              numberOfLines={1}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {search.length > 0 && (
+              <TouchableOpacity onPress={() => setSearch('')} style={styles.clearSearchBtn}>
+                <Ionicons name="close-circle" size={16} color={THEME.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <TouchableOpacity
+            style={[styles.filterIconButton, showFilters && styles.filterIconButtonActive]}
+            onPress={() => setShowFilters(!showFilters)}
             activeOpacity={0.8}
           >
-            <Text style={styles.searchButtonText}>🔍</Text>
+            <Ionicons
+              name={showFilters ? 'close' : 'options-outline'}
+              size={20}
+              color={showFilters ? THEME.white : THEME.text}
+            />
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          style={[styles.filterToggleBtn, showFilters && styles.filterToggleBtnActive]}
-          onPress={() => setShowFilters(!showFilters)}
-        >
-          <Text style={styles.filterToggleBtnText}>
-            {showFilters ? 'Hide Advanced Filters ✕' : 'Advanced Filters ⚙️'}
-          </Text>
-        </TouchableOpacity>
       </View>
 
       {/* Advanced Filters Expandable Drawer */}
@@ -245,10 +308,10 @@ export default function BrowseScreen({ navigation }) {
 
           <View style={styles.drawerActions}>
             <TouchableOpacity style={styles.resetBtn} onPress={handleResetFilters}>
-              <Text style={styles.resetBtnText}>Clear All</Text>
+              <Text style={styles.resetBtnText}>Clear</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.applyBtn} onPress={fetchProducts}>
-              <Text style={styles.applyBtnText}>Apply Filters</Text>
+              <Text style={styles.applyBtnText}>Apply</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -266,10 +329,13 @@ export default function BrowseScreen({ navigation }) {
               ]}
               onPress={() => handleCategorySelect(cat)}
             >
-              <Text style={[
-                styles.categoryText,
-                selectedCategory === cat && styles.categoryTextActive
-              ]}>{cat}</Text>
+              <Text
+                style={[
+                  styles.categoryText,
+                  selectedCategory === cat && styles.categoryTextActive
+                ]}
+                numberOfLines={1}
+              >{cat}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -314,53 +380,59 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingBottom: 14,
+    paddingBottom: 12,
     backgroundColor: THEME.cardBg,
     borderBottomWidth: 1,
     borderColor: THEME.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   searchBarContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: THEME.inputBg,
-    borderRadius: 8,
-    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 44,
+    borderWidth: 1.5,
     borderColor: THEME.border,
-    height: 48,
-    overflow: 'hidden',
+  },
+  searchIcon: {
+    marginRight: 8,
   },
   searchInput: {
     flex: 1,
     height: '100%',
     color: THEME.text,
-    paddingHorizontal: 14,
-    paddingVertical: 0,
     fontSize: 14,
-    textAlignVertical: 'center',
+    paddingVertical: 0,
     includeFontPadding: false,
   },
-  searchButton: {
-    width: 48,
-    height: '100%',
+  clearSearchBtn: {
+    padding: 4,
+  },
+  filterIconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: THEME.inputBg,
     justifyContent: 'center',
     alignItems: 'center',
+    marginLeft: 8,
+    borderWidth: 1.5,
+    borderColor: THEME.border,
+  },
+  filterIconButtonActive: {
     backgroundColor: THEME.primary,
-  },
-  searchButtonText: {
-    fontSize: 18,
-  },
-  filterToggleBtn: {
-    marginTop: 8,
-    paddingVertical: 4,
-    alignItems: 'flex-start',
-  },
-  filterToggleBtnActive: {
-    opacity: 0.8,
-  },
-  filterToggleBtnText: {
-    color: THEME.secondary,
-    fontSize: 13,
-    fontWeight: '600',
+    borderColor: THEME.primary,
   },
   filtersDrawer: {
     backgroundColor: THEME.cardBg,
@@ -381,7 +453,7 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.inputBg,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 8,
     marginRight: 8,
     borderWidth: 1,
     borderColor: THEME.border,
@@ -437,7 +509,7 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.secondary,
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   applyBtnText: {
     color: THEME.white,
@@ -452,24 +524,27 @@ const styles = StyleSheet.create({
   },
   categoryBubble: {
     backgroundColor: THEME.cardBg,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
     marginRight: 8,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: THEME.border,
+    flexShrink: 0,
   },
   categoryBubbleActive: {
-    backgroundColor: THEME.secondary,
-    borderColor: THEME.secondary,
+    backgroundColor: THEME.primary,
+    borderColor: THEME.primary,
   },
   categoryText: {
-    color: THEME.text,
+    color: THEME.textMuted,
     fontSize: 13,
     fontWeight: '600',
+    flexShrink: 0,
   },
   categoryTextActive: {
     color: THEME.white,
+    fontWeight: '700',
   },
   listContainer: {
     paddingHorizontal: 16,
@@ -482,85 +557,124 @@ const styles = StyleSheet.create({
   productCard: {
     width: COLUMN_WIDTH,
     backgroundColor: THEME.cardBg,
-    borderRadius: 12,
+    borderRadius: 10,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: THEME.border,
-    elevation: 3,
-    shadowColor: '#000',
+    elevation: 2,
+    shadowColor: '#1C1917',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+  },
+  imageWrapper: {
+    position: 'relative',
+    backgroundColor: THEME.inputBg,
   },
   productImage: {
     width: '100%',
-    height: COLUMN_WIDTH - 20,
-    backgroundColor: THEME.inputBg,
+    height: COLUMN_WIDTH * 0.95,
   },
   badgeContainer: {
     position: 'absolute',
-    top: 8,
-    left: 8,
-    right: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    top: 7,
+    left: 7,
   },
   conditionBadge: {
-    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 5,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+  },
+  conditionBadgeText: {
     color: THEME.text,
-    fontSize: 10,
-    fontWeight: '700',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  locationBadge: {
-    backgroundColor: 'rgba(99, 102, 241, 0.9)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  locationBadgeText: {
-    color: THEME.white,
     fontSize: 9,
     fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  cardWishlistBtn: {
+    position: 'absolute',
+    top: 7,
+    right: 7,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   productInfo: {
-    padding: 12,
+    padding: 10,
   },
-  priceText: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: THEME.secondary,
+  cardCategoryText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: THEME.textMuted,
+    marginBottom: 2,
   },
   titleText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     color: THEME.text,
-    marginTop: 2,
+    lineHeight: 17,
+    marginBottom: 3,
+  },
+  priceText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: THEME.text,
+    letterSpacing: -0.3,
+    marginBottom: 5,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 6,
+  },
+  locationText: {
+    fontSize: 11,
+    color: THEME.textMuted,
+    marginLeft: 3,
+    flex: 1,
   },
   sellerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: THEME.border,
   },
   sellerName: {
     fontSize: 11,
     color: THEME.textMuted,
+    fontWeight: '500',
     flex: 1,
   },
   vitBadge: {
-    backgroundColor: '#e11d48',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.primaryLight,
     borderRadius: 4,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    marginLeft: 4,
   },
   vitBadgeText: {
-    color: THEME.white,
-    fontSize: 8,
-    fontWeight: '800',
+    color: THEME.primary,
+    fontSize: 9,
+    fontWeight: '700',
+    marginLeft: 2,
   },
   loadingContainer: {
     flex: 1,

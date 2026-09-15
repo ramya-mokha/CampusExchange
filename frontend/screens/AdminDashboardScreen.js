@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
     flexBasis: '47%',
     flexGrow: 1,
     backgroundColor: THEME.cardBg,
-    borderRadius: 12,
+    borderRadius: 10,
     padding: 16,
     borderWidth: 1,
     borderColor: THEME.border,
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
   },
   tableCard: {
     backgroundColor: THEME.cardBg,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: THEME.border,
     paddingHorizontal: 16,

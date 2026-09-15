@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider, useSafeAreaInsets, initialWindowMetrics } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 // Import Context
 import { AuthProvider, AuthContext } from './context/AuthContext';
@@ -27,8 +28,8 @@ const Tab = createBottomTabNavigator();
 // Auth Stack Navigation
 function AuthStack() {
   return (
-    <Stack.Navigator 
-      screenOptions={{ 
+    <Stack.Navigator
+      screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: THEME.background }
       }}
@@ -55,6 +56,11 @@ function AppTabs() {
           height: 60 + insets.bottom,
           paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
           paddingTop: 8,
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.05,
+          shadowRadius: 6,
         },
         tabBarActiveTintColor: THEME.primary,
         tabBarInactiveTintColor: THEME.textMuted,
@@ -63,14 +69,20 @@ function AppTabs() {
           fontWeight: '600',
           marginTop: 2,
         },
-        tabBarIcon: ({ color, size }) => {
-          let emoji = '📦';
-          if (route.name === 'Browse') emoji = '🔍';
-          else if (route.name === 'Wishlist') emoji = '❤️';
-          else if (route.name === 'Post Item') emoji = '➕';
-          else if (route.name === 'Chats') emoji = '💬';
-          else if (route.name === 'Profile') emoji = '👤';
-          return <Text style={{ fontSize: 20, color }}>{emoji}</Text>;
+        tabBarIcon: ({ color, size, focused }) => {
+          let iconName = 'compass-outline';
+          if (route.name === 'Browse') {
+            iconName = focused ? 'compass' : 'compass-outline';
+          } else if (route.name === 'Wishlist') {
+            iconName = focused ? 'heart' : 'heart-outline';
+          } else if (route.name === 'Post Item') {
+            iconName = focused ? 'add-circle' : 'add-circle-outline';
+          } else if (route.name === 'Chats') {
+            iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
+          } else if (route.name === 'Profile') {
+            iconName = focused ? 'person' : 'person-outline';
+          }
+          return <Ionicons name={iconName} size={22} color={color} />;
         },
       })}
     >
@@ -90,16 +102,18 @@ function MainNavigator() {
   if (isLoading) {
     return (
       <View style={styles.splash}>
+        <Text style={styles.splashEmoji}>🛍️</Text>
         <Text style={styles.splashTitle}>Campus Exchange</Text>
-        <ActivityIndicator size="large" color={THEME.primary} style={{ marginTop: 24 }} />
+        <Text style={styles.splashTagline}>Your campus marketplace</Text>
+        <ActivityIndicator size="large" color={THEME.primary} style={{ marginTop: 28 }} />
       </View>
     );
   }
 
   return (
     <NavigationContainer>
-      <Stack.Navigator 
-        screenOptions={{ 
+      <Stack.Navigator
+        screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: THEME.background }
         }}
@@ -137,11 +151,21 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.background,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  splashEmoji: {
+    fontSize: 56,
+    marginBottom: 16,
   },
   splashTitle: {
     fontSize: 28,
     fontWeight: '800',
-    color: THEME.primary,
-    letterSpacing: 1,
+    color: THEME.text,
+    letterSpacing: -0.5,
+  },
+  splashTagline: {
+    fontSize: 15,
+    color: THEME.textMuted,
+    marginTop: 6,
   },
 });

@@ -2,28 +2,36 @@
 // For Android Emulator, localhost is accessed via 10.0.2.2.
 // For Expo Go on a real physical Android phone, change this to your machine's local Wi-Fi IP address (e.g. 192.168.1.100).
 // Change this to your deployed Render URL once hosted.
-const LOCAL_IP = '192.168.1.33'; //192.168.1.33
+const LOCAL_IP = '192.168.1.35'; //192.168.1.33
 
 export const BASE_URL = `http://${LOCAL_IP}:5000`;
 export const API_URL = `${BASE_URL}/api`;
 export const WS_URL = BASE_URL;
 
-// Color Palette for Premium Dark Mode / Light Mode aesthetics
+// Warm, human-friendly marketplace color palette
 export const THEME = {
-  primary: '#6366f1',      // Indigo
-  primaryDark: '#4f46e5',
-  secondary: '#10b981',    // Emerald Green
-  danger: '#ef4444',       // Rose Red
-  warning: '#f59e0b',      // Amber Yellow
-  background: '#0f172a',   // Sleek Slate Dark (900)
-  cardBg: '#1e293b',       // Slate (800)
-  inputBg: '#334155',      // Slate (700)
-  text: '#f8fafc',         // Slate Light (50)
-  textMuted: '#94a3b8',    // Slate Medium (400)
-  border: '#334155',
-  accent: '#a855f7',       // Purple Accent
-  gold: '#fbbf24',         // Gold Star
-  white: '#ffffff',
-  pickupBg: '#312e81',     // Deep Indigo for safe locations
-  pickupText: '#c7d2fe'
+  primary: '#E8622A',        // Warm burnt orange — friendly & energetic
+  primaryDark: '#C94F1A',    // Deeper shade for pressed states
+  primaryLight: '#FEF0E9',   // Soft peach tint for backgrounds
+  secondary: '#2E7D32',      // Earthy forest green for success/verified
+  secondaryLight: '#F1F8F2', // Soft mint wash
+  danger: '#C0392B',         // Natural warm red
+  dangerLight: '#FDF2F2',
+  warning: '#D97706',        // Amber
+  warningLight: '#FFFBEB',
+  background: '#FAF8F5',     // Warm off-white — not cold, feels like paper
+  cardBg: '#FFFFFF',
+  cardBorder: '#EDE9E3',     // Warm hairline border
+  inputBg: '#F5F2EE',        // Warm input background
+  text: '#1C1917',           // Warm near-black (stone-900)
+  textMuted: '#78716C',      // Warm stone-500
+  textLight: '#A8A29E',      // Stone-400 for timestamps
+  border: '#EDE9E3',         // Warm divider
+  accent: '#7C3AED',         // Purple accent for badges
+  gold: '#F59E0B',           // Warm star rating
+  white: '#FFFFFF',
+  pickupBg: '#FEF0E9',       // Warm peach badge
+  pickupText: '#C94F1A',
+  chatBubbleMe: '#E8622A',   // My message bubble color
+  chatBubbleOther: '#F0EDE8', // Their message bubble — warm gray
 };

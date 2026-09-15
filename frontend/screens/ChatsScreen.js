@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL, THEME } from '../config';
 
@@ -99,9 +100,9 @@ export default function ChatsScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={THEME.background} />
+      <StatusBar barStyle="dark-content" backgroundColor={THEME.background} />
       
-      <Text style={[styles.pageTitle, { paddingTop: headerTopPadding }]}>Conversations</Text>
+      <Text style={[styles.pageTitle, { paddingTop: headerTopPadding }]}>Messages</Text>
       
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -109,11 +110,11 @@ export default function ChatsScreen({ navigation }) {
         </View>
       ) : conversations.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>💬</Text>
-          <Text style={styles.emptyTitle}>No Chats Yet</Text>
-          <Text style={styles.emptySubtitle}>Find items in the browse feed and click "Chat with Seller" to start negotiating.</Text>
+          <Ionicons name="chatbubbles-outline" size={54} color={THEME.textMuted} style={{ marginBottom: 12 }} />
+          <Text style={styles.emptyTitle}>No Messages Yet</Text>
+          <Text style={styles.emptySubtitle}>Start a chat from any product page to discuss pricing and campus pickup.</Text>
           <TouchableOpacity style={styles.exploreBtn} onPress={() => navigation.navigate('Browse')}>
-            <Text style={styles.exploreBtnText}>Browse Marketplace</Text>
+            <Text style={styles.exploreBtnText}>Browse Listings</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -137,7 +138,7 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.background,
   },
   pageTitle: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '800',
     color: THEME.text,
     paddingHorizontal: 20,
@@ -151,24 +152,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: THEME.cardBg,
-    borderRadius: 12,
+    borderRadius: 10,
     padding: 14,
-    marginBottom: 12,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: THEME.border,
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   avatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: THEME.secondary,
+    backgroundColor: THEME.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: THEME.primary,
   },
   avatarText: {
-    color: THEME.white,
+    color: THEME.primary,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   content: {
     flex: 1,

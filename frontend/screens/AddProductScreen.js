@@ -12,10 +12,13 @@ import {
   Platform,
   StatusBar,
   KeyboardAvoidingView,
-  Keyboard
+  Keyboard,
+  Modal,
+  TouchableWithoutFeedback
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL, THEME } from '../config';
 
@@ -50,6 +53,10 @@ export default function AddProductScreen({ navigation }) {
   const scrollViewRef = useRef(null);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // Modal states for dropdowns
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -117,7 +124,6 @@ export default function AddProductScreen({ navigation }) {
       }
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        // Append selected image uri
         setImages([...images, result.assets[0].uri]);
       }
     } catch (err) {
@@ -132,8 +138,8 @@ export default function AddProductScreen({ navigation }) {
   };
 
   const handleSubmit = async () => {
-    if (!name || !description || !price) {
-      Alert.alert('Missing Info', 'Please fill in all fields (Name, Description, and Price).');
+    if (!name.trim() || !description.trim() || !price.trim()) {
+      Alert.alert('Missing Info', 'Please fill in all fields (Title, Price, and Description).');
       return;
     }
 
@@ -141,9 +147,9 @@ export default function AddProductScreen({ navigation }) {
       setSubmitting(true);
 
       const formData = new FormData();
-      formData.append('name', name);
-      formData.append('description', description);
-      formData.append('price', price);
+      formData.append('name', name.trim());
+      formData.append('description', description.trim());
+      formData.append('price', price.trim());
       formData.append('category', selectedCategory);
       formData.append('condition', selectedCondition);
       formData.append('pickupLocation', selectedLocation);
@@ -173,11 +179,10 @@ export default function AddProductScreen({ navigation }) {
 
       const data = await response.json();
       if (response.ok) {
-        Alert.alert('Listing Created!', 'Your item is now live on the Campus Exchange marketplace.', [
+        Alert.alert('Listing Created! 🎉', 'Your item is now live on the Campus Exchange marketplace.', [
           {
-            text: 'OK',
+            text: 'View Marketplace',
             onPress: () => {
-              // Reset state
               setName('');
               setDescription('');
               setPrice('');
@@ -199,7 +204,7 @@ export default function AddProductScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={THEME.background} />
+      <StatusBar barStyle="dark-content" backgroundColor={THEME.background} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
@@ -216,43 +221,64 @@ export default function AddProductScreen({ navigation }) {
           automaticallyAdjustKeyboardInsets={true}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={[styles.pageTitle, { paddingTop: headerTopPadding }]}>Post an Item</Text>
+          {/* Header */}
+          <View style={[styles.headerContainer, { paddingTop: headerTopPadding }]}>
+            <Text style={styles.pageTitle}>Post an Item</Text>
+            <Text style={styles.pageSubtitle}>List your item for fellow VIT campus students</Text>
+          </View>
 
           {/* Image Selection Area */}
           <View style={styles.section}>
             <Text style={styles.label}>Product Photos</Text>
-            <View style={styles.imagesRow}>
+            <View style={styles.photosWrapper}>
               {images.map((uri, idx) => (
-                <View key={idx} style={styles.imageWrapper}>
-                  <Image source={{ uri }} style={styles.imagePreview} />
-                  <TouchableOpacity style={styles.removeBtn} onPress={() => handleRemoveImage(idx)}>
-                    <Text style={styles.removeBtnText}>✕</Text>
+                <View key={idx} style={styles.imageThumbWrapper}>
+                  <Image source={{ uri }} style={styles.imageThumb} />
+                  <TouchableOpacity 
+                    style={styles.removeBtn} 
+                    onPress={() => handleRemoveImage(idx)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons name="close" size={12} color={THEME.white} />
                   </TouchableOpacity>
                 </View>
               ))}
 
               {images.length < 5 && (
-                <View style={styles.pickerButtonsContainer}>
-                  <TouchableOpacity style={styles.imagePickerBtn} onPress={() => handlePickImage(false)}>
-                    <Text style={styles.pickerIcon}>🖼️</Text>
-                    <Text style={styles.pickerLabel}>Gallery</Text>
+                <View style={styles.pickerButtonsRow}>
+                  <TouchableOpacity 
+                    style={styles.uploadCard} 
+                    onPress={() => handlePickImage(false)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.uploadIconCircle}>
+                      <Ionicons name="images-outline" size={20} color={THEME.primary} />
+                    </View>
+                    <Text style={styles.uploadCardLabel}>Gallery</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.imagePickerBtn} onPress={() => handlePickImage(true)}>
-                    <Text style={styles.pickerIcon}>📷</Text>
-                    <Text style={styles.pickerLabel}>Camera</Text>
+
+                  <TouchableOpacity 
+                    style={styles.uploadCard} 
+                    onPress={() => handlePickImage(true)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.uploadIconCircle}>
+                      <Ionicons name="camera-outline" size={20} color={THEME.primary} />
+                    </View>
+                    <Text style={styles.uploadCardLabel}>Camera</Text>
                   </TouchableOpacity>
                 </View>
               )}
             </View>
-            <Text style={styles.hint}>Upload up to 5 photos. High resolution images make sales faster.</Text>
+            <Text style={styles.hint}>Upload up to 5 clear photos (PNG, JPG). First photo is the cover.</Text>
           </View>
 
-          {/* Item details */}
+          {/* Product Name */}
           <View style={styles.section}>
-            <Text style={styles.label}>Product Name / Title</Text>
+            <Text style={styles.label}>Product Title</Text>
             <TextInput
               style={styles.input}
-              placeholder="e.g. fx-991EX Calculator / HC Verma Vol 1"
+              placeholder="e.g. fx-991EX Calculator / Engineering Physics Notes"
               placeholderTextColor={THEME.textMuted}
               value={name}
               onChangeText={setName}
@@ -260,91 +286,85 @@ export default function AddProductScreen({ navigation }) {
             />
           </View>
 
+          {/* Price */}
           <View style={styles.section}>
             <Text style={styles.label}>Price (₹)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. 500"
-              placeholderTextColor={THEME.textMuted}
-              keyboardType="numeric"
-              value={price}
-              onChangeText={setPrice}
-              onFocus={() => scrollToInput(180)}
-            />
+            <View style={styles.priceInputContainer}>
+              <Text style={styles.pricePrefix}>₹</Text>
+              <TextInput
+                style={styles.priceInput}
+                placeholder="500"
+                placeholderTextColor={THEME.textMuted}
+                keyboardType="numeric"
+                value={price}
+                onChangeText={setPrice}
+                onFocus={() => scrollToInput(180)}
+              />
+            </View>
           </View>
 
-          {/* Categories choices */}
+          {/* Select Category — Modern Dropdown */}
           <View style={styles.section}>
-            <Text style={styles.label}>Select Category</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-              {CATEGORIES.map((cat) => (
-                <TouchableOpacity
-                  key={cat}
-                  style={[
-                    styles.selectorBubble,
-                    selectedCategory === cat && styles.selectorBubbleActive
-                  ]}
-                  onPress={() => setSelectedCategory(cat)}
-                >
-                  <Text style={[
-                    styles.selectorBubbleText,
-                    selectedCategory === cat && styles.selectorBubbleTextActive
-                  ]}>{cat}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <Text style={styles.label}>Category</Text>
+            <TouchableOpacity
+              style={styles.dropdownTrigger}
+              onPress={() => setShowCategoryModal(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.dropdownValueText}>{selectedCategory}</Text>
+              <View style={styles.dropdownChevronWrap}>
+                <Ionicons name="chevron-down" size={18} color={THEME.textMuted} />
+              </View>
+            </TouchableOpacity>
           </View>
 
-          {/* Condition choices */}
+          {/* Condition — Clean Segmented Control */}
           <View style={styles.section}>
             <Text style={styles.label}>Condition</Text>
-            <View style={styles.conditionRow}>
-              {CONDITIONS.map((cond) => (
-                <TouchableOpacity
-                  key={cond}
-                  style={[
-                    styles.conditionBtn,
-                    selectedCondition === cond && styles.conditionBtnActive
-                  ]}
-                  onPress={() => setSelectedCondition(cond)}
-                >
-                  <Text style={[
-                    styles.conditionBtnText,
-                    selectedCondition === cond && styles.conditionBtnTextActive
-                  ]}>{cond}</Text>
-                </TouchableOpacity>
-              ))}
+            <View style={styles.segmentedContainer}>
+              {CONDITIONS.map((cond) => {
+                const isSelected = selectedCondition === cond;
+                return (
+                  <TouchableOpacity
+                    key={cond}
+                    style={[styles.segmentBtn, isSelected && styles.segmentBtnActive]}
+                    onPress={() => setSelectedCondition(cond)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.segmentText, isSelected && styles.segmentTextActive]}>
+                      {cond}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
 
-          {/* Campus Pickup Location Dropdown */}
+          {/* Designated Pickup Location — Modern Dropdown */}
           <View style={styles.section}>
-            <Text style={styles.label}>📍 Designated Safe Pickup Location</Text>
-            <Text style={styles.hint}>Choose an official campus zone for physical handovers:</Text>
-            <View style={styles.locationsGrid}>
-              {PICKUP_POINTS.map((loc) => (
-                <TouchableOpacity
-                  key={loc}
-                  style={[
-                    styles.locationBtn,
-                    selectedLocation === loc && styles.locationBtnActive
-                  ]}
-                  onPress={() => setSelectedLocation(loc)}
-                >
-                  <Text style={[
-                    styles.locationBtnText,
-                    selectedLocation === loc && styles.locationBtnTextActive
-                  ]}>📍 {loc}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <Text style={styles.label}>Safe Campus Pickup Location</Text>
+            <TouchableOpacity
+              style={styles.dropdownTrigger}
+              onPress={() => setShowLocationModal(true)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.dropdownValueRow}>
+                <Ionicons name="location-sharp" size={17} color={THEME.primary} style={{ marginRight: 8 }} />
+                <Text style={styles.dropdownValueText}>{selectedLocation}</Text>
+              </View>
+              <View style={styles.dropdownChevronWrap}>
+                <Ionicons name="chevron-down" size={18} color={THEME.textMuted} />
+              </View>
+            </TouchableOpacity>
+            <Text style={styles.hint}>Designated safe zones for physical handovers on campus.</Text>
           </View>
 
+          {/* Detailed Description */}
           <View style={styles.section}>
             <Text style={styles.label}>Detailed Description</Text>
             <TextInput
               style={[styles.input, styles.multilineInput]}
-              placeholder="Describe condition, usage history, inclusions, and when you are available for exchanges."
+              placeholder="Describe condition, usage history, inclusions, and when you are free for handovers."
               placeholderTextColor={THEME.textMuted}
               multiline
               numberOfLines={4}
@@ -358,20 +378,140 @@ export default function AddProductScreen({ navigation }) {
             />
           </View>
 
+          {/* Submit Button */}
           <TouchableOpacity
-            style={styles.submitBtn}
+            style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
             onPress={handleSubmit}
             disabled={submitting}
+            activeOpacity={0.85}
           >
             {submitting ? (
               <ActivityIndicator color={THEME.white} />
             ) : (
-              <Text style={styles.submitBtnText}>Post Listing Now</Text>
+              <View style={styles.submitBtnContent}>
+                <Text style={styles.submitBtnText}>Post Listing Now</Text>
+                <Ionicons name="arrow-forward" size={18} color={THEME.white} style={{ marginLeft: 6 }} />
+              </View>
             )}
           </TouchableOpacity>
 
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Category Selection Bottom Sheet Modal */}
+      <Modal
+        visible={showCategoryModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowCategoryModal(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowCategoryModal(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalSheet}>
+                <View style={styles.modalHandle} />
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Select Category</Text>
+                  <TouchableOpacity 
+                    onPress={() => setShowCategoryModal(false)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons name="close-circle" size={24} color={THEME.textMuted} />
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView showsVerticalScrollIndicator={false} style={styles.modalList}>
+                  {CATEGORIES.map((cat) => {
+                    const isSelected = selectedCategory === cat;
+                    return (
+                      <TouchableOpacity
+                        key={cat}
+                        style={[styles.modalItem, isSelected && styles.modalItemActive]}
+                        onPress={() => {
+                          setSelectedCategory(cat);
+                          setShowCategoryModal(false);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.modalItemText, isSelected && styles.modalItemTextActive]}>
+                          {cat}
+                        </Text>
+                        {isSelected ? (
+                          <Ionicons name="checkmark-circle" size={20} color={THEME.primary} />
+                        ) : (
+                          <Ionicons name="ellipse-outline" size={20} color={THEME.border} />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Pickup Location Selection Bottom Sheet Modal */}
+      <Modal
+        visible={showLocationModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowLocationModal(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowLocationModal(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalSheet}>
+                <View style={styles.modalHandle} />
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Choose Pickup Zone</Text>
+                  <TouchableOpacity 
+                    onPress={() => setShowLocationModal(false)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons name="close-circle" size={24} color={THEME.textMuted} />
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView showsVerticalScrollIndicator={false} style={styles.modalList}>
+                  {PICKUP_POINTS.map((loc) => {
+                    const isSelected = selectedLocation === loc;
+                    return (
+                      <TouchableOpacity
+                        key={loc}
+                        style={[styles.modalItem, isSelected && styles.modalItemActive]}
+                        onPress={() => {
+                          setSelectedLocation(loc);
+                          setShowLocationModal(false);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.modalLocationLeft}>
+                          <Ionicons 
+                            name="location-sharp" 
+                            size={18} 
+                            color={isSelected ? THEME.primary : THEME.textMuted} 
+                            style={{ marginRight: 10 }}
+                          />
+                          <Text style={[styles.modalItemText, isSelected && styles.modalItemTextActive]}>
+                            {loc}
+                          </Text>
+                        </View>
+                        {isSelected ? (
+                          <Ionicons name="checkmark-circle" size={20} color={THEME.primary} />
+                        ) : (
+                          <Ionicons name="ellipse-outline" size={20} color={THEME.border} />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
     </View>
   );
 }
@@ -387,56 +527,70 @@ const styles = StyleSheet.create({
   scrollContainer: {
     paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 20,
+    paddingBottom: 24,
+  },
+  headerContainer: {
+    marginBottom: 18,
   },
   pageTitle: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '800',
     color: THEME.text,
-    marginBottom: 14,
+    letterSpacing: -0.4,
+  },
+  pageSubtitle: {
+    fontSize: 13,
+    color: THEME.textMuted,
+    marginTop: 3,
   },
   section: {
-    marginBottom: 14,
+    marginBottom: 16,
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: THEME.text,
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: THEME.cardBg,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: THEME.border,
-    color: THEME.text,
-    fontSize: 15,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  multilineInput: {
-    height: 88,
-    textAlignVertical: 'top',
+    marginBottom: 7,
+    letterSpacing: -0.2,
   },
   hint: {
     fontSize: 11,
     color: THEME.textMuted,
-    marginTop: 3,
+    marginTop: 5,
+    lineHeight: 16,
   },
-  imagesRow: {
+  input: {
+    backgroundColor: THEME.cardBg,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: THEME.border,
+    color: THEME.text,
+    fontSize: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+  },
+  multilineInput: {
+    height: 96,
+    textAlignVertical: 'top',
+    paddingTop: 11,
+  },
+
+  // Photos
+  photosWrapper: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 3,
+    gap: 10,
   },
-  imageWrapper: {
+  imageThumbWrapper: {
     position: 'relative',
     width: 72,
     height: 72,
-    borderRadius: 8,
+    borderRadius: 10,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: THEME.border,
   },
-  imagePreview: {
+  imageThumb: {
     width: '100%',
     height: '100%',
   },
@@ -444,129 +598,227 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 4,
     right: 4,
-    backgroundColor: 'rgba(239, 68, 68, 0.8)',
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    backgroundColor: 'rgba(28, 25, 23, 0.75)',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  removeBtnText: {
-    color: THEME.white,
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  pickerButtonsContainer: {
+  pickerButtonsRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
   },
-  imagePickerBtn: {
-    width: 72,
+  uploadCard: {
+    width: 74,
     height: 72,
     backgroundColor: THEME.cardBg,
-    borderRadius: 8,
-    borderWidth: 1,
+    borderRadius: 10,
+    borderWidth: 1.5,
     borderColor: THEME.border,
+    borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 6,
   },
-  pickerIcon: {
-    fontSize: 20,
-  },
-  pickerLabel: {
-    fontSize: 10,
-    color: THEME.textMuted,
-    marginTop: 2,
-  },
-  horizontalScroll: {
-    marginTop: 4,
-  },
-  selectorBubble: {
-    backgroundColor: THEME.cardBg,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 16,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: THEME.border,
-  },
-  selectorBubbleActive: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
-  },
-  selectorBubbleText: {
-    color: THEME.textMuted,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  selectorBubbleTextActive: {
-    color: THEME.white,
-  },
-  conditionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 4,
-  },
-  conditionBtn: {
-    flex: 1,
-    backgroundColor: THEME.cardBg,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 6,
-    marginHorizontal: 4,
-    borderWidth: 1,
-    borderColor: THEME.border,
-  },
-  conditionBtnActive: {
-    backgroundColor: THEME.secondary,
-    borderColor: THEME.secondary,
-  },
-  conditionBtnText: {
-    color: THEME.textMuted,
-    fontWeight: '600',
-    fontSize: 13,
-  },
-  conditionBtnTextActive: {
-    color: THEME.white,
-    fontWeight: '700',
-  },
-  locationsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 6,
-  },
-  locationBtn: {
-    backgroundColor: THEME.cardBg,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: THEME.border,
-  },
-  locationBtnActive: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
-  },
-  locationBtnText: {
-    color: THEME.text,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  locationBtnTextActive: {
-    color: THEME.white,
-    fontWeight: '700',
-  },
-  submitBtn: {
-    backgroundColor: THEME.secondary,
-    paddingVertical: 13,
+  uploadIconCircle: {
+    width: 32,
+    height: 32,
     borderRadius: 8,
+    backgroundColor: THEME.primaryLight,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 6,
+    marginBottom: 3,
+  },
+  uploadCardLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: THEME.text,
+  },
+
+  // Price with integrated currency symbol
+  priceInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.cardBg,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: THEME.border,
+    paddingHorizontal: 14,
+    height: 46,
+  },
+  pricePrefix: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: THEME.textMuted,
+    marginRight: 6,
+  },
+  priceInput: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: THEME.text,
+    height: '100%',
+    padding: 0,
+  },
+
+  // Dropdown Select Field
+  dropdownTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: THEME.cardBg,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: THEME.border,
+    paddingHorizontal: 14,
+    height: 46,
+  },
+  dropdownValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  dropdownValueText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: THEME.text,
+    flex: 1,
+  },
+  dropdownChevronWrap: {
+    marginLeft: 8,
+  },
+
+  // Segmented Control for Condition
+  segmentedContainer: {
+    flexDirection: 'row',
+    backgroundColor: THEME.inputBg,
+    borderRadius: 10,
+    padding: 3,
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  segmentBtn: {
+    flex: 1,
+    paddingVertical: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+  },
+  segmentBtnActive: {
+    backgroundColor: THEME.primary,
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  segmentText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: THEME.textMuted,
+  },
+  segmentTextActive: {
+    color: THEME.white,
+    fontWeight: '700',
+  },
+
+  // Submit Button
+  submitBtn: {
+    backgroundColor: THEME.primary,
+    borderRadius: 10,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 10,
+    shadowColor: THEME.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  submitBtnDisabled: {
+    opacity: 0.6,
+  },
+  submitBtnContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   submitBtnText: {
     color: THEME.white,
-    fontSize: 16,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+
+  // Bottom Sheet Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(28, 25, 23, 0.45)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: THEME.cardBg,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
+    maxHeight: '75%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  modalHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: THEME.border,
+    alignSelf: 'center',
+    marginBottom: 14,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderColor: THEME.border,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: THEME.text,
+  },
+  modalList: {
+    marginTop: 4,
+  },
+  modalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 13,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    marginBottom: 4,
+  },
+  modalItemActive: {
+    backgroundColor: THEME.primaryLight,
+  },
+  modalLocationLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  modalItemText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: THEME.text,
+  },
+  modalItemTextActive: {
+    color: THEME.primary,
     fontWeight: '700',
   },
 });

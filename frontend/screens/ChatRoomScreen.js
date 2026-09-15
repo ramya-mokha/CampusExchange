@@ -13,6 +13,7 @@ import {
   Keyboard
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import io from 'socket.io-client';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL, WS_URL, THEME } from '../config';
@@ -140,8 +141,8 @@ export default function ChatRoomScreen({ route, navigation }) {
     return (
       <View style={[styles.bubbleWrapper, isMe ? styles.bubbleRight : styles.bubbleLeft]}>
         <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleOther]}>
-          <Text style={styles.bubbleText}>{item.text}</Text>
-          <Text style={styles.bubbleTime}>{time}</Text>
+          <Text style={isMe ? styles.bubbleTextMe : styles.bubbleTextOther}>{item.text}</Text>
+          <Text style={isMe ? styles.bubbleTimeMe : styles.bubbleTimeOther}>{time}</Text>
         </View>
       </View>
     );
@@ -149,7 +150,7 @@ export default function ChatRoomScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={THEME.cardBg} />
+      <StatusBar barStyle="dark-content" backgroundColor={THEME.cardBg} />
       
       {/* Header bar showing other user details safely below status bar */}
       <View style={[styles.headerBar, { paddingTop: headerTopPadding }]}>
@@ -158,7 +159,7 @@ export default function ChatRoomScreen({ route, navigation }) {
           onPress={() => navigation.goBack()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Text style={styles.backBtnText}>◀</Text>
+          <Ionicons name="arrow-back" size={20} color={THEME.text} />
         </TouchableOpacity>
         <View style={styles.headerInfo}>
           <Text style={styles.headerTitle} numberOfLines={1}>
@@ -174,8 +175,9 @@ export default function ChatRoomScreen({ route, navigation }) {
       {/* Optional negotiated product banner */}
       {itemInfo && (
         <View style={styles.productBanner}>
+          <Ionicons name="pricetag-outline" size={14} color={THEME.primary} style={{ marginRight: 6 }} />
           <Text style={styles.productBannerText} numberOfLines={1}>
-            Negotiating for: <Text style={styles.boldText}>{itemInfo.name}</Text> (₹{itemInfo.price})
+            Item: <Text style={styles.boldText}>{itemInfo.name}</Text> (₹{itemInfo.price})
           </Text>
         </View>
       )}
@@ -210,7 +212,7 @@ export default function ChatRoomScreen({ route, navigation }) {
         <View style={[styles.inputBar, { paddingBottom: keyboardVisible ? 8 : bottomPadding }]}>
           <TextInput
             style={styles.chatInput}
-            placeholder="Type your message..."
+            placeholder="Write a message..."
             placeholderTextColor={THEME.textMuted}
             value={inputText}
             onChangeText={setInputText}
@@ -224,7 +226,7 @@ export default function ChatRoomScreen({ route, navigation }) {
             disabled={!inputText.trim()}
             activeOpacity={0.8}
           >
-            <Text style={styles.sendBtnText}>Send</Text>
+            <Ionicons name="send" size={16} color={THEME.white} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -235,7 +237,7 @@ export default function ChatRoomScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.background,
+    backgroundColor: '#FAF8F5',
   },
   keyboardContainer: {
     flex: 1,
@@ -250,11 +252,13 @@ const styles = StyleSheet.create({
     borderColor: THEME.border,
   },
   backBtn: {
-    width: 36,
-    height: 36,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: THEME.inputBg,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
+    marginRight: 10,
   },
   backBtnText: {
     color: THEME.primary,
@@ -291,13 +295,15 @@ const styles = StyleSheet.create({
     color: THEME.textMuted,
   },
   productBanner: {
-    backgroundColor: THEME.border,
+    backgroundColor: THEME.primaryLight,
     paddingVertical: 8,
     paddingHorizontal: 16,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   productBannerText: {
-    color: THEME.textMuted,
+    color: THEME.primaryDark,
     fontSize: 12,
   },
   boldText: {
@@ -331,35 +337,43 @@ const styles = StyleSheet.create({
   },
   bubble: {
     maxWidth: '78%',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 9,
-    position: 'relative',
   },
   bubbleMe: {
     backgroundColor: THEME.primary,
-    borderBottomRightRadius: 2,
+    borderBottomRightRadius: 4,
   },
   bubbleOther: {
-    backgroundColor: THEME.cardBg,
-    borderBottomLeftRadius: 2,
-    borderWidth: 1,
-    borderColor: THEME.border,
+    backgroundColor: '#EDEBE7',
+    borderBottomLeftRadius: 4,
   },
-  bubbleText: {
+  bubbleTextMe: {
     color: THEME.white,
     fontSize: 14,
     lineHeight: 20,
   },
-  bubbleTime: {
-    color: 'rgba(248, 250, 252, 0.65)',
+  bubbleTextOther: {
+    color: THEME.text,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  bubbleTimeMe: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 10,
+    alignSelf: 'flex-end',
+    marginTop: 4,
+  },
+  bubbleTimeOther: {
+    color: THEME.textMuted,
     fontSize: 10,
     alignSelf: 'flex-end',
     marginTop: 4,
   },
   inputBar: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     paddingTop: 10,
     paddingHorizontal: 12,
     backgroundColor: THEME.cardBg,
@@ -369,7 +383,7 @@ const styles = StyleSheet.create({
   chatInput: {
     flex: 1,
     backgroundColor: THEME.inputBg,
-    borderRadius: 20,
+    borderRadius: 14,
     color: THEME.text,
     fontSize: 14,
     paddingHorizontal: 16,
@@ -379,18 +393,20 @@ const styles = StyleSheet.create({
     maxHeight: 100,
     textAlignVertical: 'center',
     includeFontPadding: false,
+    borderWidth: 1.5,
+    borderColor: THEME.border,
   },
   sendBtn: {
-    backgroundColor: THEME.secondary,
-    borderRadius: 20,
+    backgroundColor: THEME.primary,
+    borderRadius: 10,
     height: 40,
+    width: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 18,
     marginLeft: 8,
   },
   sendBtnDisabled: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
   sendBtnText: {
     color: THEME.white,

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL, THEME } from '../config';
 
@@ -30,8 +31,10 @@ export default function ProfileScreen({ navigation }) {
   const fetchMyProducts = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_URL}/products?seller=${user._id}&status=all`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const res = await fetch(`${API_URL}/products/user/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       const data = await res.json();
       if (res.ok) {
@@ -66,17 +69,38 @@ export default function ProfileScreen({ navigation }) {
       <TouchableOpacity 
         style={styles.card}
         onPress={() => navigation.navigate('ProductDetail', { productId: item._id })}
-        activeOpacity={0.8}
+        activeOpacity={0.88}
       >
-        <Image 
-          source={{ uri: item.images[0] || 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=400' }} 
-          style={styles.image} 
-        />
+        <View style={styles.cardImageWrapper}>
+          <Image 
+            source={{ uri: item.images?.[0] || 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=400' }} 
+            style={styles.image} 
+          />
+          {item.condition ? (
+            <View style={styles.cardConditionBadge}>
+              <Text style={styles.cardConditionBadgeText}>{item.condition}</Text>
+            </View>
+          ) : null}
+        </View>
+
         <View style={styles.info}>
-          <Text style={styles.category}>{item.category}</Text>
+          <View style={styles.cardTopRow}>
+            <View style={styles.categoryPill}>
+              <Text style={styles.category} numberOfLines={1}>{item.category || 'Listing'}</Text>
+            </View>
+            <View style={styles.manageBtn}>
+              <Text style={styles.manageBtnText}>Manage</Text>
+              <Ionicons name="chevron-forward" size={11} color={THEME.primary} />
+            </View>
+          </View>
+
           <Text style={styles.title} numberOfLines={1}>{item.name}</Text>
           <Text style={styles.price}>₹{item.price}</Text>
-          <Text style={styles.location}>📍 Pickup: {item.pickupLocation}</Text>
+
+          <View style={styles.cardLocationRow}>
+            <Ionicons name="location-sharp" size={11} color={THEME.primary} />
+            <Text style={styles.location} numberOfLines={1}>{item.pickupLocation}</Text>
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -96,7 +120,7 @@ export default function ProfileScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={THEME.cardBg} />
+      <StatusBar barStyle="dark-content" backgroundColor={THEME.cardBg} />
       
       {/* Profile Header Block */}
       <View style={[styles.header, { paddingTop: headerTopPadding }]}>
@@ -211,18 +235,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: THEME.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    borderWidth: 3,
+    borderColor: THEME.primaryLight,
   },
   avatarText: {
     color: THEME.white,
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '800',
   },
   userDetails: {
     flex: 1,
@@ -268,15 +294,17 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    backgroundColor: THEME.inputBg,
-    borderRadius: 8,
-    paddingVertical: 10,
+    backgroundColor: THEME.primaryLight,
+    borderRadius: 10,
+    paddingVertical: 12,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: THEME.border,
   },
   statVal: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
-    color: THEME.text,
+    color: THEME.primary,
   },
   statLabel: {
     fontSize: 11,
@@ -328,43 +356,103 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     backgroundColor: THEME.cardBg,
-    borderRadius: 12,
-    overflow: 'hidden',
+    borderRadius: 10,
+    padding: 10,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: THEME.border,
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  cardImageWrapper: {
+    position: 'relative',
+    width: 86,
+    height: 86,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: THEME.inputBg,
   },
   image: {
-    width: 90,
-    height: 90,
-    backgroundColor: THEME.inputBg,
+    width: '100%',
+    height: '100%',
+  },
+  cardConditionBadge: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  cardConditionBadgeText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: THEME.text,
+    textTransform: 'uppercase',
   },
   info: {
     flex: 1,
-    padding: 12,
-    justifyContent: 'center',
+    marginLeft: 12,
+    justifyContent: 'space-between',
+  },
+  cardTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  categoryPill: {
+    backgroundColor: THEME.inputBg,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   category: {
     color: THEME.textMuted,
     fontSize: 10,
     fontWeight: '600',
   },
+  manageBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.primaryLight,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 5,
+  },
+  manageBtnText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: THEME.primary,
+    marginRight: 2,
+  },
   title: {
     fontSize: 14,
     fontWeight: '700',
     color: THEME.text,
+    lineHeight: 18,
     marginTop: 2,
   },
   price: {
     fontSize: 15,
     fontWeight: '800',
-    color: THEME.secondary,
-    marginTop: 2,
+    color: THEME.text,
+    letterSpacing: -0.3,
+  },
+  cardLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 3,
+    borderTopWidth: 1,
+    borderTopColor: THEME.border,
   },
   location: {
     fontSize: 11,
     color: THEME.textMuted,
-    marginTop: 2,
+    marginLeft: 3,
   },
   footerContainer: {
     paddingTop: 12,

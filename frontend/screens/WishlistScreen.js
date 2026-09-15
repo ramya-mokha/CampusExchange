@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL, THEME } from '../config';
 
@@ -40,12 +41,12 @@ export default function WishlistScreen({ navigation }) {
 
       updateWishlist(profileData.wishlist);
 
-      if (profileData.wishlist.length === 0) {
+      if (!profileData.wishlist || profileData.wishlist.length === 0) {
         setWishlistItems([]);
         return;
       }
 
-      // Fetch all products and filter locally (simplifies backend logic and ensures offline-sync compatibility)
+      // Fetch all products and filter locally
       const productsRes = await fetch(`${API_URL}/products?status=all`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -71,6 +72,9 @@ export default function WishlistScreen({ navigation }) {
 
   const handleRemoveFromWishlist = async (productId) => {
     try {
+      // Optimistically filter out item for instant responsiveness
+      setWishlistItems(prev => prev.filter(item => item._id !== productId));
+      
       const res = await fetch(`${API_URL}/products/${productId}/wishlist`, {
         method: 'POST',
         headers: {
@@ -78,8 +82,6 @@ export default function WishlistScreen({ navigation }) {
         }
       });
       if (res.ok) {
-        // Filter out item from state immediately for responsive micro-interactions
-        setWishlistItems(wishlistItems.filter(item => item._id !== productId));
         const data = await res.json();
         updateWishlist(data.wishlist);
       }
@@ -89,64 +91,97 @@ export default function WishlistScreen({ navigation }) {
   };
 
   const renderWishlistItem = ({ item }) => {
+    const isSold = item.status === 'sold';
+
     return (
-      <View style={styles.card}>
-        <Image 
-          source={{ uri: item.images[0] || 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=400' }} 
-          style={styles.image} 
-        />
+      <TouchableOpacity 
+        style={styles.card}
+        onPress={() => navigation.navigate('ProductDetail', { productId: item._id })}
+        activeOpacity={0.88}
+      >
+        <View style={styles.imageWrapper}>
+          <Image 
+            source={{ uri: item.images?.[0] || 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=400' }} 
+            style={styles.image} 
+          />
+          {item.condition ? (
+            <View style={styles.conditionTag}>
+              <Text style={styles.conditionTagText}>{item.condition}</Text>
+            </View>
+          ) : null}
+          {isSold && (
+            <View style={styles.soldOverlay}>
+              <Text style={styles.soldOverlayText}>SOLD</Text>
+            </View>
+          )}
+        </View>
         
         <View style={styles.info}>
-          <View style={styles.headerRow}>
-            <Text style={styles.category} numberOfLines={1}>{item.category}</Text>
-            {item.status === 'sold' && (
-              <View style={styles.soldBadge}>
-                <Text style={styles.soldBadgeText}>SOLD</Text>
-              </View>
-            )}
+          <View style={styles.topRow}>
+            <View style={styles.categoryBadge}>
+              <Text style={styles.categoryBadgeText} numberOfLines={1}>{item.category || 'Item'}</Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.removeIconBtn} 
+              onPress={() => handleRemoveFromWishlist(item._id)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="trash-outline" size={17} color={THEME.danger} />
+            </TouchableOpacity>
           </View>
           
           <Text style={styles.title} numberOfLines={1}>{item.name}</Text>
           <Text style={styles.price}>₹{item.price}</Text>
-          <Text style={styles.location}>📍 Pickup: {item.pickupLocation}</Text>
-          
-          <View style={styles.actions}>
-            <TouchableOpacity 
-              style={styles.viewBtn} 
-              onPress={() => navigation.navigate('ProductDetail', { productId: item._id })}
-            >
-              <Text style={styles.viewBtnText}>View Item</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.removeBtn} 
-              onPress={() => handleRemoveFromWishlist(item._id)}
-            >
-              <Text style={styles.removeBtnText}>Remove ✕</Text>
-            </TouchableOpacity>
+
+          <View style={styles.bottomRow}>
+            <View style={styles.locationRow}>
+              <Ionicons name="location-sharp" size={12} color={THEME.primary} />
+              <Text style={styles.location} numberOfLines={1}>{item.pickupLocation}</Text>
+            </View>
+
+            <View style={styles.viewLinkRow}>
+              <Text style={styles.viewLinkText}>Details</Text>
+              <Ionicons name="chevron-forward" size={12} color={THEME.primary} />
+            </View>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={THEME.background} />
+      <StatusBar barStyle="dark-content" backgroundColor={THEME.background} />
       
-      <Text style={[styles.pageTitle, { paddingTop: headerTopPadding }]}>Saved Wishlist</Text>
+      <View style={[styles.headerContainer, { paddingTop: headerTopPadding }]}>
+        <Text style={styles.pageTitle}>Saved Wishlist</Text>
+        <Text style={styles.pageSubtitle}>
+          {wishlistItems.length} {wishlistItems.length === 1 ? 'saved item' : 'saved items'}
+        </Text>
+      </View>
       
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={THEME.primary} />
+          <Text style={styles.loadingText}>Loading saved listings...</Text>
         </View>
       ) : wishlistItems.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>❤️</Text>
-          <Text style={styles.emptyTitle}>Wishlist is Empty</Text>
-          <Text style={styles.emptySubtitle}>Tap the heart icon on any listing details to save it here.</Text>
-          <TouchableOpacity style={styles.browseBtn} onPress={() => navigation.navigate('Browse')} activeOpacity={0.8}>
-            <Text style={styles.browseBtnText}>Explore Listings</Text>
+          <View style={styles.emptyIconCircle}>
+            <Ionicons name="heart-outline" size={36} color={THEME.primary} />
+          </View>
+          <Text style={styles.emptyTitle}>Your Wishlist is Empty</Text>
+          <Text style={styles.emptySubtitle}>
+            Tap the heart icon on any listing while browsing to save it here for quick access.
+          </Text>
+          <TouchableOpacity 
+            style={styles.browseBtn} 
+            onPress={() => navigation.navigate('Browse')} 
+            activeOpacity={0.85}
+          >
+            <Text style={styles.browseBtnText}>Explore Marketplace</Text>
+            <Ionicons name="arrow-forward" size={16} color={THEME.white} style={{ marginLeft: 6 }} />
           </TouchableOpacity>
         </View>
       ) : (
@@ -169,12 +204,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: THEME.background,
   },
-  pageTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: THEME.text,
+  headerContainer: {
     paddingHorizontal: 20,
     marginBottom: 16,
+  },
+  pageTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: THEME.text,
+    letterSpacing: -0.4,
+  },
+  pageSubtitle: {
+    fontSize: 13,
+    color: THEME.textMuted,
+    marginTop: 2,
   },
   listContainer: {
     paddingHorizontal: 20,
@@ -183,120 +226,182 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     backgroundColor: THEME.cardBg,
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginBottom: 16,
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: THEME.border,
+    shadowColor: '#1C1917',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  imageWrapper: {
+    position: 'relative',
+    width: 96,
+    height: 96,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: THEME.inputBg,
   },
   image: {
-    width: 110,
-    height: 120,
-    backgroundColor: THEME.inputBg,
+    width: '100%',
+    height: '100%',
+  },
+  conditionTag: {
+    position: 'absolute',
+    top: 5,
+    left: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  conditionTagText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: THEME.text,
+    textTransform: 'uppercase',
+  },
+  soldOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(28, 25, 23, 0.72)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  soldOverlayText: {
+    color: THEME.white,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 1,
   },
   info: {
     flex: 1,
-    padding: 12,
+    marginLeft: 12,
     justifyContent: 'space-between',
   },
-  headerRow: {
+  topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  category: {
-    color: THEME.textMuted,
-    fontSize: 11,
+  categoryBadge: {
+    backgroundColor: THEME.inputBg,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 5,
+  },
+  categoryBadgeText: {
+    fontSize: 10,
     fontWeight: '600',
-    flex: 1,
+    color: THEME.textMuted,
   },
-  soldBadge: {
-    backgroundColor: THEME.danger,
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  soldBadgeText: {
-    color: THEME.white,
-    fontSize: 9,
-    fontWeight: '900',
+  removeIconBtn: {
+    padding: 2,
   },
   title: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: THEME.text,
+    lineHeight: 18,
     marginTop: 2,
   },
   price: {
     fontSize: 16,
     fontWeight: '800',
-    color: THEME.secondary,
-    marginTop: 2,
+    color: THEME.text,
+    letterSpacing: -0.3,
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: THEME.border,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
   },
   location: {
     fontSize: 11,
     color: THEME.textMuted,
-    marginTop: 2,
+    marginLeft: 3,
   },
-  actions: {
+  viewLinkRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 10,
-  },
-  viewBtn: {
-    backgroundColor: THEME.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    alignItems: 'center',
+    backgroundColor: THEME.primaryLight,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
     borderRadius: 6,
   },
-  viewBtnText: {
-    color: THEME.white,
-    fontSize: 12,
+  viewLinkText: {
+    fontSize: 11,
     fontWeight: '700',
-  },
-  removeBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  removeBtnText: {
-    color: THEME.danger,
-    fontSize: 12,
-    fontWeight: '700',
+    color: THEME.primary,
+    marginRight: 2,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 80,
+  },
+  loadingText: {
+    color: THEME.textMuted,
+    marginTop: 12,
+    fontSize: 14,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
-    marginTop: 60,
+    paddingHorizontal: 36,
+    marginTop: 80,
   },
-  emptyIcon: {
-    fontSize: 48,
+  emptyIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: THEME.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 16,
   },
   emptyTitle: {
     color: THEME.text,
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 19,
+    fontWeight: '800',
     marginBottom: 8,
   },
   emptySubtitle: {
     color: THEME.textMuted,
     textAlign: 'center',
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 20,
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 24,
   },
   browseBtn: {
-    backgroundColor: THEME.secondary,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.primary,
+    paddingVertical: 11,
+    paddingHorizontal: 22,
+    borderRadius: 10,
+    shadowColor: THEME.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    elevation: 3,
   },
   browseBtnText: {
     color: THEME.white,
