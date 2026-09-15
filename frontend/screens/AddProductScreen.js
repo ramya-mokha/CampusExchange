@@ -48,30 +48,22 @@ export default function AddProductScreen({ navigation }) {
 
   const { token } = useContext(AuthContext);
   const scrollViewRef = useRef(null);
-  const preKeyboardScrollY = useRef(0);
-  const keyboardActive = useRef(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
-    const showSub = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      () => {
-        keyboardActive.current = true;
-        setKeyboardVisible(true);
-      }
-    );
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
-    const hideSub = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      () => {
-        setKeyboardVisible(false);
-        keyboardActive.current = false;
-        // Smoothly restore screen to its exact pre-keyboard position with zero extra gap
-        setTimeout(() => {
-          scrollViewRef.current?.scrollTo({ y: preKeyboardScrollY.current, animated: true });
-        }, 50);
-      }
-    );
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardVisible(true);
+      setKeyboardHeight(e.endCoordinates?.height || 320);
+    });
+
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardVisible(false);
+      setKeyboardHeight(0);
+    });
 
     return () => {
       showSub.remove();
@@ -79,17 +71,10 @@ export default function AddProductScreen({ navigation }) {
     };
   }, []);
 
-  const handleScroll = (event) => {
-    if (!keyboardActive.current) {
-      preKeyboardScrollY.current = event.nativeEvent.contentOffset.y;
-    }
-  };
-
-  const handleInputFocus = (targetY) => {
-    keyboardActive.current = true;
+  const scrollToInput = (offset) => {
     setTimeout(() => {
-      scrollViewRef.current?.scrollTo({ y: targetY, animated: true });
-    }, 120);
+      scrollViewRef.current?.scrollTo({ y: offset, animated: true });
+    }, 150);
   };
 
   // Form States
@@ -222,14 +207,13 @@ export default function AddProductScreen({ navigation }) {
       >
         <ScrollView 
           ref={scrollViewRef}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
           contentContainerStyle={[
             styles.scrollContainer,
-            { paddingBottom: keyboardVisible ? 140 : 20 }
+            { paddingBottom: keyboardVisible ? Math.max(keyboardHeight + 60, 340) : 40 }
           ]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets={true}
           showsVerticalScrollIndicator={false}
         >
           <Text style={[styles.pageTitle, { paddingTop: headerTopPadding }]}>Post an Item</Text>
@@ -272,7 +256,7 @@ export default function AddProductScreen({ navigation }) {
               placeholderTextColor={THEME.textMuted}
               value={name}
               onChangeText={setName}
-              onFocus={() => handleInputFocus(140)}
+              onFocus={() => scrollToInput(100)}
             />
           </View>
 
@@ -285,7 +269,7 @@ export default function AddProductScreen({ navigation }) {
               keyboardType="numeric"
               value={price}
               onChangeText={setPrice}
-              onFocus={() => handleInputFocus(220)}
+              onFocus={() => scrollToInput(180)}
             />
           </View>
 
@@ -366,7 +350,11 @@ export default function AddProductScreen({ navigation }) {
               numberOfLines={4}
               value={description}
               onChangeText={setDescription}
-              onFocus={() => handleInputFocus(460)}
+              onFocus={() => {
+                setTimeout(() => {
+                  scrollViewRef.current?.scrollToEnd({ animated: true });
+                }, 150);
+              }}
             />
           </View>
 

@@ -9,7 +9,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  StatusBar
+  StatusBar,
+  Keyboard
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import io from 'socket.io-client';
@@ -30,6 +31,7 @@ export default function ChatRoomScreen({ route, navigation }) {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(true);
   const [connected, setConnected] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const socketRef = useRef(null);
   const flatListRef = useRef(null);
@@ -39,6 +41,27 @@ export default function ChatRoomScreen({ route, navigation }) {
   const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0);
   const headerTopPadding = topInset > 0 ? topInset + 10 : 12;
   const bottomPadding = insets.bottom > 0 ? insets.bottom + 8 : 14;
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, () => {
+      setKeyboardVisible(true);
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    });
+
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   // Load message logs
   const fetchMessages = async () => {
@@ -160,7 +183,8 @@ export default function ChatRoomScreen({ route, navigation }) {
       {/* Chat messages & keyboard area */}
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         {/* Message history */}
         {loading ? (
@@ -176,13 +200,14 @@ export default function ChatRoomScreen({ route, navigation }) {
             style={styles.messageListStyle}
             contentContainerStyle={styles.messageList}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
             onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
           />
         )}
 
         {/* Bottom Text Inputs safely positioned above bottom navigation */}
-        <View style={[styles.inputBar, { paddingBottom: bottomPadding }]}>
+        <View style={[styles.inputBar, { paddingBottom: keyboardVisible ? 8 : bottomPadding }]}>
           <TextInput
             style={styles.chatInput}
             placeholder="Type your message..."
