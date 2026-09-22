@@ -2,11 +2,23 @@
 // For Android Emulator, localhost is accessed via 10.0.2.2.
 // For Expo Go on a real physical Android phone, change this to your machine's local Wi-Fi IP address (e.g. 192.168.1.100).
 // Change this to your deployed Render URL once hosted.
-const LOCAL_IP = '192.168.1.35'; //192.168.1.33
+const LOCAL_IP = 'localhost';
 
 export const BASE_URL = `http://${LOCAL_IP}:5000`;
 export const API_URL = `${BASE_URL}/api`;
 export const WS_URL = BASE_URL;
+
+// Helper to normalize image URLs (handles Cloudinary, local server uploads, and old hardcoded IPs)
+export const resolveImageUrl = (imgUrl) => {
+  if (!imgUrl) return 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=400';
+  if (imgUrl.startsWith('https://res.cloudinary.com')) return imgUrl;
+  if (imgUrl.startsWith('https://') || imgUrl.startsWith(`${BASE_URL}/uploads/`)) return imgUrl;
+  if (imgUrl.includes('/uploads/')) {
+    const filename = imgUrl.split('/uploads/').pop();
+    return `${BASE_URL}/uploads/${filename}`;
+  }
+  return imgUrl;
+};
 
 // Warm, human-friendly marketplace color palette
 export const THEME = {

@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AuthContext } from '../context/AuthContext';
-import { API_URL, THEME } from '../config';
+import { API_URL, THEME, resolveImageUrl } from '../config';
 
 const { width } = Dimensions.get('window');
 const COLUMN_WIDTH = (width - 48) / 2;
@@ -167,7 +167,7 @@ export default function BrowseScreen({ navigation }) {
       >
         <View style={styles.imageWrapper}>
           <Image
-            source={{ uri: item.images?.[0] || 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=400' }}
+            source={{ uri: resolveImageUrl(item.images?.[0]) }}
             style={styles.productImage}
           />
           {item.condition ? (

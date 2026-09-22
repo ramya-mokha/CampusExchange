@@ -3,6 +3,7 @@ const router = express.Router();
 const { 
   getProducts, 
   getProductById, 
+  getMyProducts,
   createProduct, 
   updateProduct, 
   deleteProduct, 
@@ -12,6 +13,7 @@ const { protect } = require('../middleware/auth');
 const { upload } = require('../middleware/upload');
 
 router.get('/', getProducts);
+router.get('/user/me', protect, getMyProducts);
 router.get('/:id', getProductById);
 
 router.post('/', protect, upload.array('images', 5), createProduct);

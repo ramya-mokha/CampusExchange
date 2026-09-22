@@ -129,6 +129,9 @@ const createProduct = async (req, res) => {
       return res.status(400).json({ message: 'Please provide all required fields' });
     }
 
+    const fileCount = req.files ? req.files.length : (req.file ? 1 : 0);
+    console.log(`📦 Creating listing: "${name}" (${category}) | Images received: ${fileCount}`);
+
     // Process files
     const imageUrls = [];
     if (req.files && req.files.length > 0) {
@@ -158,6 +161,7 @@ const createProduct = async (req, res) => {
       status: 'active'
     });
 
+    console.log(`✨ Product created successfully [ID: ${product._id}] with ${imageUrls.length} image(s). First image: ${imageUrls[0]}`);
     res.status(201).json(product);
   } catch (error) {
     console.error('Create product error:', error);
@@ -276,9 +280,30 @@ const toggleWishlist = async (req, res) => {
   }
 };
 
+// @desc    Get current user's products
+// @route   GET /api/products/user/me
+// @access  Private
+const getMyProducts = async (req, res) => {
+  try {
+    const isMock = require('../config/db').isUsingMock();
+    let products;
+    if (isMock) {
+      const queryRes = await Product.find({ seller: req.user.id }).sort({ createdAt: -1 });
+      products = Array.isArray(queryRes) ? queryRes : queryRes.results || [];
+    } else {
+      products = await Product.find({ seller: req.user.id }).sort({ createdAt: -1 });
+    }
+    res.json(products);
+  } catch (error) {
+    console.error('Fetch my products error:', error);
+    res.status(500).json({ message: 'Server error fetching user listings' });
+  }
+};
+
 module.exports = {
   getProducts,
   getProductById,
+  getMyProducts,
   createProduct,
   updateProduct,
   deleteProduct,

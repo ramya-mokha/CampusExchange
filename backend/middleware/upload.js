@@ -16,17 +16,19 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    const ext = path.extname(file.originalname) || '.jpg';
+    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
   }
 });
 
 // File validation
 const fileFilter = (req, file, cb) => {
-  const filetypes = /jpeg|jpg|png|webp|gif/;
-  const mimetype = filetypes.test(file.mimetype);
-  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+  const filetypes = /jpeg|jpg|png|webp|gif|heic/;
+  const isImageMime = file.mimetype && (filetypes.test(file.mimetype) || file.mimetype.startsWith('image/'));
+  const ext = path.extname(file.originalname).toLowerCase();
+  const isImageExt = ext ? filetypes.test(ext) : true;
   
-  if (mimetype && extname) {
+  if (isImageMime || isImageExt) {
     return cb(null, true);
   }
   cb(new Error('Only images (.jpg, .jpeg, .png, .webp, .gif) are allowed!'));
@@ -34,7 +36,7 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter
 });
 
@@ -61,14 +63,18 @@ const uploadToCloud = async (file, req) => {
 
   if (isCloudinaryConfigured) {
     try {
+      console.log(`☁️  Uploading ${file.originalname || file.filename} to Cloudinary...`);
       const result = await cloudinary.uploader.upload(file.path, {
         folder: 'campus_exchange'
       });
       // Delete temporary local file
-      fs.unlinkSync(file.path);
+      if (fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+      }
+      console.log(`✅ Cloudinary upload success: ${result.secure_url}`);
       return result.secure_url;
     } catch (error) {
-      console.error('Cloudinary Upload Error, falling back to local file link:', error);
+      console.error('Cloudinary Upload Error, falling back to local file link:', error.message);
       // Fallback to local file link if Cloudinary fails
     }
   }

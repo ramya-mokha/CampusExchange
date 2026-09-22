@@ -48,6 +48,33 @@
       "role": "student",
       "wishlist": [],
       "createdAt": "2026-09-15T04:31:32.672Z"
+    },
+    {
+      "_id": "user_nlfrzbakh",
+      "name": "testname",
+      "email": "test@gmail.com",
+      "passwordHash": "$2a$10$RkOOjYOdTG4ooFu3f2P3Ve4zEs4looKCiScU.AJeoH3w2FnBpe./y",
+      "role": "student",
+      "wishlist": [],
+      "createdAt": "2026-09-18T05:06:14.801Z"
+    },
+    {
+      "_id": "user_6vawaowtg",
+      "name": "test1",
+      "email": "test1@gmail.com",
+      "passwordHash": "$2a$10$vn4w4iqeospcPa6C37/M0Oou.cWJuWvqJDbKUt5dOYZAJ/iIwWOiG",
+      "role": "student",
+      "wishlist": [],
+      "createdAt": "2026-09-21T05:45:02.844Z"
+    },
+    {
+      "_id": "user_ub5fbg79w",
+      "name": "test2",
+      "email": "test2@gmail.com",
+      "passwordHash": "$2a$10$deqytkixQhc0hO4Uunwp0./yxFDsk8M54bGs6DbmCi2FfdQSZnrM6",
+      "role": "student",
+      "wishlist": [],
+      "createdAt": "2026-09-22T03:04:12.494Z"
     }
   ],
   "products": [
@@ -156,6 +183,21 @@
       "seller": "user_jwoui5kiq",
       "status": "sold",
       "createdAt": "2026-09-15T04:32:36.205Z"
+    },
+    {
+      "_id": "prod_xpw3epsdr",
+      "name": "Bag",
+      "description": "-",
+      "category": "🎒 Hostel Essentials",
+      "price": 1500,
+      "condition": "Good",
+      "pickupLocation": "Academic Block",
+      "images": [
+        "http://localhost:5000/uploads/images-1790046307028-115051863.png"
+      ],
+      "seller": "user_ub5fbg79w",
+      "status": "active",
+      "createdAt": "2026-09-22T03:05:07.047Z"
     }
   ],
   "messages": [

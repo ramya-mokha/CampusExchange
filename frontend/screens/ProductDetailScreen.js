@@ -17,7 +17,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AuthContext } from '../context/AuthContext';
-import { API_URL, THEME } from '../config';
+import { API_URL, THEME, resolveImageUrl } from '../config';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -302,7 +302,7 @@ export default function ProductDetailScreen({ route, navigation }) {
         {/* Rounded Hero Image Area */}
         <View style={styles.heroImageContainer}>
           <Image
-            source={{ uri: product.images?.[0] || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=600' }}
+            source={{ uri: resolveImageUrl(product.images?.[0]) }}
             style={styles.heroImage}
             resizeMode="cover"
           />

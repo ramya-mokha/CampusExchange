@@ -88,7 +88,11 @@ function AppTabs() {
     >
       <Tab.Screen name="Browse" component={BrowseScreen} />
       <Tab.Screen name="Wishlist" component={WishlistScreen} />
-      <Tab.Screen name="Post Item" component={AddProductScreen} />
+      <Tab.Screen 
+        name="Post Item" 
+        component={AddProductScreen} 
+        options={{ tabBarLabel: 'Add Listing' }}
+      />
       <Tab.Screen name="Chats" component={ChatsScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>

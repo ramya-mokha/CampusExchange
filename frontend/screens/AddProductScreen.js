@@ -94,6 +94,23 @@ export default function AddProductScreen({ navigation }) {
   const [images, setImages] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
+  // Cross-platform alert helper
+  const showAlert = (title, message, buttons) => {
+    if (Platform.OS === 'web') {
+      if (buttons && buttons.length > 0) {
+        const confirmBtn = buttons.find(b => b.style !== 'cancel') || buttons[0];
+        window.alert(`${title}\n\n${message}`);
+        if (confirmBtn && typeof confirmBtn.onPress === 'function') {
+          confirmBtn.onPress();
+        }
+      } else {
+        window.alert(`${title}\n\n${message}`);
+      }
+    } else {
+      Alert.alert(title, message, buttons);
+    }
+  };
+
   // Request permissions and pick image
   const handlePickImage = async (useCamera = false) => {
     try {
@@ -105,7 +122,7 @@ export default function AddProductScreen({ navigation }) {
       }
 
       if (!permissionResult.granted) {
-        Alert.alert('Permission Denied', `We need permission to access your ${useCamera ? 'camera' : 'photos'} to upload listings.`);
+        showAlert('Permission Denied', `We need permission to access your ${useCamera ? 'camera' : 'photos'} to upload listings.`);
         return;
       }
 
@@ -124,7 +141,13 @@ export default function AddProductScreen({ navigation }) {
       }
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setImages([...images, result.assets[0].uri]);
+        const asset = result.assets[0];
+        setImages([...images, {
+          uri: asset.uri,
+          file: asset.file,
+          name: asset.fileName || `image_${Date.now()}.jpg`,
+          type: asset.mimeType || 'image/jpeg'
+        }]);
       }
     } catch (err) {
       console.error('Image picking error:', err);
@@ -139,7 +162,7 @@ export default function AddProductScreen({ navigation }) {
 
   const handleSubmit = async () => {
     if (!name.trim() || !description.trim() || !price.trim()) {
-      Alert.alert('Missing Info', 'Please fill in all fields (Title, Price, and Description).');
+      showAlert('Missing Info', 'Please fill in all fields (Title, Price, and Description).');
       return;
     }
 
@@ -154,24 +177,43 @@ export default function AddProductScreen({ navigation }) {
       formData.append('condition', selectedCondition);
       formData.append('pickupLocation', selectedLocation);
 
-      // Append image files
+      // Append image files correctly across Web and Native
       if (images.length > 0) {
-        images.forEach((uri, idx) => {
-          const filename = uri.split('/').pop();
-          const match = /\.(\w+)$/.exec(filename || '');
-          const type = match ? `image/${match[1]}` : `image`;
-          formData.append('images', {
-            uri: Platform.OS === 'ios' ? uri.replace('file://', '') : uri,
-            name: filename || `image_${idx}.jpg`,
-            type
-          });
-        });
+        for (let i = 0; i < images.length; i++) {
+          const item = images[i];
+          const uri = typeof item === 'string' ? item : item.uri;
+          const fallbackName = `image_${i}.jpg`;
+          const rawName = (typeof item === 'object' && item.name) ? item.name : uri.split('/').pop() || fallbackName;
+          const filename = rawName.includes('.') ? rawName : `${rawName}.jpg`;
+          const match = /\.(\w+)$/.exec(filename);
+          const detectedType = (typeof item === 'object' && item.type) ? item.type : (match ? `image/${match[1].toLowerCase()}` : 'image/jpeg');
+          const type = detectedType === 'image' ? 'image/jpeg' : detectedType;
+
+          if (Platform.OS === 'web') {
+            if (typeof item === 'object' && item.file) {
+              formData.append('images', item.file, filename);
+            } else {
+              // Convert blob:/data: URI into a real Blob for web FormData
+              const blobRes = await fetch(uri);
+              const blob = await blobRes.blob();
+              formData.append('images', blob, filename);
+            }
+          } else {
+            formData.append('images', {
+              uri: Platform.OS === 'ios' ? uri.replace('file://', '') : uri,
+              name: filename,
+              type
+            });
+          }
+        }
       }
 
+      console.log(`Submitting listing with ${images.length} images to ${API_URL}/products`);
       const response = await fetch(`${API_URL}/products`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'multipart/form-data',
+          // NOTE: Never manually set 'Content-Type': 'multipart/form-data'!
+          // fetch automatically generates Content-Type with the correct boundary parameter.
           'Authorization': `Bearer ${token}`
         },
         body: formData
@@ -179,7 +221,8 @@ export default function AddProductScreen({ navigation }) {
 
       const data = await response.json();
       if (response.ok) {
-        Alert.alert('Listing Created! 🎉', 'Your item is now live on the Campus Exchange marketplace.', [
+        console.log('Listing created successfully:', data);
+        showAlert('Listing Created! 🎉', 'Your item is now live on the Campus Exchange marketplace.', [
           {
             text: 'View Marketplace',
             onPress: () => {
@@ -192,11 +235,12 @@ export default function AddProductScreen({ navigation }) {
           }
         ]);
       } else {
-        Alert.alert('Submission Failed', data.message || 'Error occurred while saving product listing.');
+        console.error('Server returned error on product creation:', data);
+        showAlert('Submission Failed', data.message || 'Error occurred while saving product listing.');
       }
     } catch (error) {
       console.error('Submit product error:', error);
-      Alert.alert('Error', 'Network request failed. Ensure your server is running.');
+      showAlert('Error', 'Network request failed. Ensure your server is running.');
     } finally {
       setSubmitting(false);
     }
@@ -231,18 +275,21 @@ export default function AddProductScreen({ navigation }) {
           <View style={styles.section}>
             <Text style={styles.label}>Product Photos</Text>
             <View style={styles.photosWrapper}>
-              {images.map((uri, idx) => (
-                <View key={idx} style={styles.imageThumbWrapper}>
-                  <Image source={{ uri }} style={styles.imageThumb} />
-                  <TouchableOpacity 
-                    style={styles.removeBtn} 
-                    onPress={() => handleRemoveImage(idx)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Ionicons name="close" size={12} color={THEME.white} />
-                  </TouchableOpacity>
-                </View>
-              ))}
+              {images.map((item, idx) => {
+                const uri = typeof item === 'string' ? item : item.uri;
+                return (
+                  <View key={idx} style={styles.imageThumbWrapper}>
+                    <Image source={{ uri }} style={styles.imageThumb} />
+                    <TouchableOpacity 
+                      style={styles.removeBtn} 
+                      onPress={() => handleRemoveImage(idx)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Ionicons name="close" size={12} color={THEME.white} />
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
 
               {images.length < 5 && (
                 <View style={styles.pickerButtonsRow}>
