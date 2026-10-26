@@ -22,11 +22,17 @@ export default function WishlistScreen({ navigation }) {
   const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0);
   const headerTopPadding = topInset > 0 ? topInset + 12 : 20;
 
-  const { token, updateWishlist } = useContext(AuthContext);
+  const { token, updateWishlist, logout } = useContext(AuthContext);
   const [wishlistItems, setWishlistItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchWishlist = async () => {
+    if (!token) {
+      setLoading(false);
+      setWishlistItems([]);
+      return;
+    }
+
     try {
       setLoading(true);
       // Fetch fresh profile data to get updated wishlist IDs
@@ -36,6 +42,11 @@ export default function WishlistScreen({ navigation }) {
       const profileData = await profileRes.json();
       
       if (!profileRes.ok) {
+        if (profileRes.status === 401 && logout) {
+          console.log('Session expired in Wishlist, logging out.');
+          logout();
+          return;
+        }
         throw new Error(profileData.message || 'Error loading profile');
       }
 

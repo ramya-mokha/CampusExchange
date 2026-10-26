@@ -19,6 +19,21 @@ export const AuthProvider = ({ children }) => {
         if (storedToken && storedUser) {
           setToken(storedToken);
           setUser(JSON.parse(storedUser));
+
+          // Verify if token is still valid with current backend DB
+          fetch(`${API_URL}/auth/me`, {
+            headers: { 'Authorization': `Bearer ${storedToken}` }
+          }).then(async (res) => {
+            if (res.status === 401) {
+              console.log('Stored token is invalid or expired, clearing session.');
+              await AsyncStorage.removeItem('token');
+              await AsyncStorage.removeItem('user');
+              setToken(null);
+              setUser(null);
+            }
+          }).catch(() => {
+            // Ignore offline network errors
+          });
         }
       } catch (err) {
         console.error('Error loading session from storage:', err);

@@ -12,7 +12,16 @@ const connectDB = async () => {
   }
 
   try {
-    const conn = await mongoose.connect(mongoURI, { serverSelectionTimeoutMS: 5000 });
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Connection timed out after 5000ms (check MongoDB Atlas IP whitelist)')), 5000)
+    );
+
+    const connectPromise = mongoose.connect(mongoURI, { 
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 5000
+    });
+
+    const conn = await Promise.race([connectPromise, timeoutPromise]);
     console.log(`📡 MongoDB Atlas Connected: ${conn.connection.host}`);
     return true;
   } catch (error) {

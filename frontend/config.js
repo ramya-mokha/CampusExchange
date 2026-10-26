@@ -2,8 +2,7 @@
 // For Android Emulator, localhost is accessed via 10.0.2.2.
 // For Expo Go on a real physical Android phone, change this to your machine's local Wi-Fi IP address (e.g. 192.168.1.100).
 // Change this to your deployed Render URL once hosted.
-const LOCAL_IP = 'localhost';
-
+const LOCAL_IP = '192.168.1.35';
 export const BASE_URL = `http://${LOCAL_IP}:5000`;
 export const API_URL = `${BASE_URL}/api`;
 export const WS_URL = BASE_URL;

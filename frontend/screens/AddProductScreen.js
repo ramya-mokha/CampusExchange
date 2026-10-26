@@ -49,7 +49,7 @@ export default function AddProductScreen({ navigation }) {
   const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0);
   const headerTopPadding = topInset > 0 ? topInset + 12 : 20;
 
-  const { token } = useContext(AuthContext);
+  const { token, logout } = useContext(AuthContext);
   const scrollViewRef = useRef(null);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -128,7 +128,7 @@ export default function AddProductScreen({ navigation }) {
 
       let result;
       const options = {
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
@@ -193,7 +193,6 @@ export default function AddProductScreen({ navigation }) {
             if (typeof item === 'object' && item.file) {
               formData.append('images', item.file, filename);
             } else {
-              // Convert blob:/data: URI into a real Blob for web FormData
               const blobRes = await fetch(uri);
               const blob = await blobRes.blob();
               formData.append('images', blob, filename);
@@ -209,18 +208,32 @@ export default function AddProductScreen({ navigation }) {
       }
 
       console.log(`Submitting listing with ${images.length} images to ${API_URL}/products`);
-      const response = await fetch(`${API_URL}/products`, {
-        method: 'POST',
-        headers: {
-          // NOTE: Never manually set 'Content-Type': 'multipart/form-data'!
-          // fetch automatically generates Content-Type with the correct boundary parameter.
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
 
-      const data = await response.json();
-      if (response.ok) {
+      // Use XMLHttpRequest for native FormData upload to bypass expo/fetch FormDataPart bugs
+      const uploadWithXHR = (url, bodyData, authToken) => {
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', url);
+          if (authToken) {
+            xhr.setRequestHeader('Authorization', `Bearer ${authToken}`);
+          }
+          xhr.onload = () => {
+            try {
+              const resData = JSON.parse(xhr.responseText);
+              resolve({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, data: resData });
+            } catch (e) {
+              resolve({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, data: { message: xhr.responseText } });
+            }
+          };
+          xhr.onerror = () => reject(new Error('Network request failed'));
+          xhr.send(bodyData);
+        });
+      };
+
+      const result = await uploadWithXHR(`${API_URL}/products`, formData, token);
+      const data = result.data;
+
+      if (result.ok) {
         console.log('Listing created successfully:', data);
         showAlert('Listing Created! 🎉', 'Your item is now live on the Campus Exchange marketplace.', [
           {
@@ -233,6 +246,10 @@ export default function AddProductScreen({ navigation }) {
               navigation.navigate('Browse');
             }
           }
+        ]);
+      } else if (result.status === 401) {
+        showAlert('Session Expired', 'Your login session is invalid or has expired. Please log in again.', [
+          { text: 'Log In', onPress: () => logout && logout() }
         ]);
       } else {
         console.error('Server returned error on product creation:', data);

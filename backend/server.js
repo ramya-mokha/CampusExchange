@@ -23,9 +23,6 @@ app.use(express.urlencoded({ extended: true }));
 // Serve Static Uploads
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
-// Connect to Cloud Database
-connectDB();
-
 // API Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
@@ -98,8 +95,14 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`\n🚀 Server listening on port ${PORT}`);
-  console.log(`📍 REST endpoint: http://localhost:${PORT}`);
-  console.log(`📍 WebSockets: ws://localhost:${PORT}\n`);
-});
+
+const startServer = async () => {
+  await connectDB();
+  server.listen(PORT, () => {
+    console.log(`\n🚀 Server listening on port ${PORT}`);
+    console.log(`📍 REST endpoint: http://localhost:${PORT}`);
+    console.log(`📍 WebSockets: ws://localhost:${PORT}\n`);
+  });
+};
+
+startServer();
